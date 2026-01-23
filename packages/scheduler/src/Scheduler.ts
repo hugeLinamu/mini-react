@@ -115,11 +115,13 @@ function scheduleCallback(priorityLevel: PriorityLevel, callback: Callback) {
 function requestHostCallback() {
   if (!isMessageLoopRunning) {
     isMessageLoopRunning = true;
+    // 使⽤ MessageChannel 创建宏任务，来实现异步任务队列，以实现异步更新，确保 React 在执⾏更新时能够合并多个更新操作，并在下⼀个宏任务中⼀次性
+    // 更新，以提⾼性能并减少不必要的重复渲染，从⽽提⾼⻚⾯性能和⽤户体验。
     schedulePerformWorkUntilDeadline();
   }
 }
 
-// !手写一个requestIdleCallback
+// !手写一个requestIdleCallback 创建一个宏任务
 const channel = new MessageChannel();
 const port = channel.port2;
 channel.port1.onmessage = performWorkUntilDeadline;
@@ -128,6 +130,7 @@ function schedulePerformWorkUntilDeadline() {
   port.postMessage(null);
 }
 
+// 执行work 直到时间片耗尽
 function performWorkUntilDeadline() {
   const currentTime = getCurrentTime();
   startTime = currentTime;
