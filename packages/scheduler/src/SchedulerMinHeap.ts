@@ -5,7 +5,7 @@ export type Node = {
 };
 
 // !获取堆顶元素
-export const peek = <T extends Node>(heap: Heap<T>): Node | null => {
+export const peek = <T extends Node>(heap: Heap<T>): T | null => {
   return heap.length === 0 ? null : heap[0];
 };
 
@@ -42,7 +42,7 @@ export const siftUp = <T extends Node>(
   }
 };
 
-// !删除堆顶元素
+// !删除堆顶元素  先取出堆顶元素，然后取出最后一个元素放到堆顶，然后从上往下堆化
 export const pop = <T extends Node>(heap: Heap<T>): T | null => {
   if (!heap.length) return null;
   const first = heap[0];
