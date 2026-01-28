@@ -4,8 +4,8 @@
  * callback 是 task 的初始值，会经过scheduleCallback封装成task
  */
 
+import type { PriorityLevel } from "./SchedulerPriorities";
 import {
-  PriorityLevel,
   NormalPriority,
   IdlePriority,
   ImmediatePriority,
@@ -32,7 +32,7 @@ export type Task = {
   sortIndex: number; // 根据任务优先级，开始时间和过期时间得到的索引
 };
 
-type Callback = (arg: boolean) => Callback | null | undefined;
+type Callback = (arg: boolean) => Callback | null | undefined | void;
 
 // 当前任务优先级
 let currentPriorityLevel: PriorityLevel = NoPriority;

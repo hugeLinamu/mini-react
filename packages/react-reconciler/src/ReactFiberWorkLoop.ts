@@ -1,0 +1,116 @@
+import type { Fiber, FiberRoot } from "./ReactInternalTypes";
+import { ensureRootIsScheduled } from "./ReactFiberRootScheduler";
+import { createWorkInProgress } from "./ReactFiber";
+import { completeWork } from "./ReactFiberCompleteWork";
+import { beginWork } from "./ReactFiberBeginWork";
+
+type ExecutionContext = number;
+
+export const NoContext = /*             */ 0b000;
+export const BatchedContext = /*        */ 0b001;
+export const RenderContext = /*         */ 0b010;
+export const CommitContext = /*         */ 0b100;
+
+// ! 这个变量用来解决 ： 更新（setState / render）可能在任何时间、任何阶段被触发的问题
+// 比如 ： render 阶段调用 setState
+//        commit 阶段触发更新
+//        effect 里触发更新
+//        事件回调里触发更新
+let executionContext: ExecutionContext = NoContext;
+
+let workInProgress: Fiber | null = null; // 当前正在工作的 Fiber
+let workInProgressRoot: FiberRoot | null = null; // 当前正在工作的 FiberRoot
+
+export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
+  workInProgressRoot = root;
+  workInProgress = fiber;
+  ensureRootIsScheduled(root);
+}
+
+export function performConcurrentWorkOnRoot(root: FiberRoot) {
+  // ! 1. render, 构建fiber树 VDOM（beginWork|completeWork）
+  renderRootSync(root);
+  console.log(root, "renderRootSync===>");
+  debugger;
+
+  // ! 2. commit, 构建DOM（commitWork） VDOM->DOM
+  commitRoot(root);
+}
+
+function renderRootSync(root: FiberRoot) {
+  // !1. render阶段开始
+  const prevExecutionContext = executionContext;
+  executionContext |= RenderContext;
+
+  // !2. 初始化
+  prepareFreshStack(root);
+
+  // !3. 遍历构建fiber树
+  workLoopSync();
+
+  // !4. render结束
+  executionContext = prevExecutionContext;
+  workInProgressRoot = null;
+}
+
+function commitRoot(root: FiberRoot) {}
+
+function prepareFreshStack(root: FiberRoot): Fiber {
+  root.finishedWork = null;
+  workInProgressRoot = root; // FiberRoot
+  const rootWorkInProgress = createWorkInProgress(root.current, null); // Fiber
+  if (workInProgress === null) {
+    workInProgress = rootWorkInProgress;
+  }
+
+  return rootWorkInProgress;
+}
+
+function workLoopSync() {
+  while (workInProgress !== null) {
+    performUnitOfWork(workInProgress);
+  }
+}
+
+// 负责“Fiber 怎么一个一个被处理”
+function performUnitOfWork(unitOfWork: Fiber): void {
+  const current = unitOfWork.alternate;
+  // !1. beginWork
+  let next = beginWork(current, unitOfWork);
+  console.log(next, "next===>");
+  // ! 把pendingProps更新到memoizedProps
+  unitOfWork.memoizedProps = unitOfWork.pendingProps;
+
+  if (next === null) {
+    // 没有产生新的work
+    // !2. completeWork
+    completeUnitOfWork(unitOfWork);
+  } else {
+    workInProgress = next;
+  }
+}
+
+// 深度优先遍历，子节点、兄弟节点、叔叔节点、爷爷的兄弟节点...
+function completeUnitOfWork(unitOfWork: Fiber) {
+  let completedWork = unitOfWork;
+  do {
+    const current = completedWork.alternate;
+    const returnFiber = completedWork.return;
+    // 获取下一个节点
+    const next = completeWork(current, completedWork);
+    if (next !== null) {
+      workInProgress = next;
+      return;
+    }
+    // 没有下一个节点，获取兄弟节点
+    const sibling = completedWork.sibling;
+    if (sibling !== null) {
+      workInProgress = sibling;
+      return;
+    }
+
+    // 父节点
+    completedWork = returnFiber as Fiber;
+    workInProgress = completedWork;
+  } while (completedWork !== null);
+}
