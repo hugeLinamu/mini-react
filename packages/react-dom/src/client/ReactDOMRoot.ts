@@ -1,7 +1,7 @@
-import { ReactNodeList } from "shared/ReactTypes";
+import type { ReactNodeList } from "shared/ReactTypes";
 import { createFiberRoot } from "react-reconciler/src/ReactFiberRoot";
 import { updateContainer } from "react-reconciler/src/ReactFiberReconciler";
-import { FiberRoot } from "react-reconciler/src/ReactInternalTypes";
+import type { FiberRoot } from "react-reconciler/src/ReactInternalTypes";
 
 type RootType = {
   render: (children: ReactNodeList) => void;

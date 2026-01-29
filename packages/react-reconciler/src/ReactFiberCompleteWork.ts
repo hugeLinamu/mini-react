@@ -46,7 +46,6 @@ function finalizeInitialChildren(domElement: Element, props: any) {
 }
 
 function appendAllChildren(parent: Element, workInProgress: Fiber) {
-  debugger
   let nodeFiber = workInProgress.child;
   if (nodeFiber) {
     parent.appendChild(nodeFiber.stateNode);

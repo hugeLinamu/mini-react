@@ -62,7 +62,7 @@ export type Container = Element | Document | DocumentFragment;
 export type FiberRoot = {
   containerInfo: Container;
   current: Fiber;
-  // 一个准备提交 work-in-progress， HostRoot
+  // 一个准备提交的Fiber work-in-progress， HostRoot
   finishedWork: Fiber | null;
   pendingLanes: Lanes;
 };

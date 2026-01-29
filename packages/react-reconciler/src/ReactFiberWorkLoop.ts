@@ -3,6 +3,7 @@ import { ensureRootIsScheduled } from "./ReactFiberRootScheduler";
 import { createWorkInProgress } from "./ReactFiber";
 import { completeWork } from "./ReactFiberCompleteWork";
 import { beginWork } from "./ReactFiberBeginWork";
+import { commitMutationEffects } from "./ReactFiberCommitWork";
 
 type ExecutionContext = number;
 
@@ -31,8 +32,9 @@ export function performConcurrentWorkOnRoot(root: FiberRoot) {
   // ! 1. render, 构建fiber树 VDOM（beginWork|completeWork）
   renderRootSync(root);
   console.log(root, "renderRootSync===>");
-  debugger;
 
+  const finishedWork = root.current.alternate;
+  root.finishedWork = finishedWork; // 根Fiber
   // ! 2. commit, 构建DOM（commitWork） VDOM->DOM
   commitRoot(root);
 }
@@ -53,7 +55,18 @@ function renderRootSync(root: FiberRoot) {
   workInProgressRoot = null;
 }
 
-function commitRoot(root: FiberRoot) {}
+function commitRoot(root: FiberRoot) {
+  // !1. commit阶段开始
+  const prevExecutionContext = executionContext;
+  executionContext |= CommitContext;
+
+  // !2.1 mutation阶段, 渲染DOM树
+  commitMutationEffects(root, root.finishedWork as Fiber); //finishedWork 为 Fiber,HostRoot=3
+
+  // !3. commit结束
+  executionContext = prevExecutionContext;
+  workInProgressRoot = null;
+}
 
 function prepareFreshStack(root: FiberRoot): Fiber {
   root.finishedWork = null;
