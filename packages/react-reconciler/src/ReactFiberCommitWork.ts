@@ -3,8 +3,9 @@ import type { FiberRoot, Fiber } from "./ReactInternalTypes";
 import { HostComponent, HostRoot } from "./ReactWorkTags";
 
 export function commitMutationEffects(root: FiberRoot, finishedWork: Fiber) {
-  // 1. 从根节点遍历
+  // 1. 从根节点深度优先遍历整棵 Fiber 树
   recursivelyTraverseMutationEffects(root, finishedWork);
+  // 
   commitReconciliationEffects(finishedWork);
 }
 
@@ -24,7 +25,7 @@ function recursivelyTraverseMutationEffects(
 function commitReconciliationEffects(finishedWork: Fiber) {
   const flags = finishedWork.flags;
   if (flags & Placement) {
-    // 页面初次渲染 新增插入 appendChild
+    // 页面初次渲染：为 新增插入 appendChild
     // todo 页面更新，修改位置 appendChild || insertBefore
     commitPlacement(finishedWork);
     // 清除flags，做非的与运算

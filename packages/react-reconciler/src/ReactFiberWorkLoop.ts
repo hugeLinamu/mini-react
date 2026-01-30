@@ -29,11 +29,14 @@ export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
 }
 
 export function performConcurrentWorkOnRoot(root: FiberRoot) {
-  // ! 1. render, 构建fiber树 VDOM（beginWork|completeWork）
+  // ! 1. render, 根据FiberRoot 构建fiber树 VDOM（beginWork|completeWork）
   renderRootSync(root);
   console.log(root, "renderRootSync===>");
 
+  // 已经构建好的fiber树
   const finishedWork = root.current.alternate;
+  console.log(finishedWork, "finishedWork===>");
+  debugger
   root.finishedWork = finishedWork; // 根Fiber
   // ! 2. commit, 构建DOM（commitWork） VDOM->DOM
   commitRoot(root);
@@ -71,11 +74,12 @@ function commitRoot(root: FiberRoot) {
 function prepareFreshStack(root: FiberRoot): Fiber {
   root.finishedWork = null;
   workInProgressRoot = root; // FiberRoot
+  // 根据 HostRoot Fiber 创建（或复用）一个“工作中的 Fiber”（workInProgress）并挂载到 HostRoot Filber 的 alternate 上
+  // 用于本次 render 阶段的计算，而不影响当前已挂载的 Fiber 树
   const rootWorkInProgress = createWorkInProgress(root.current, null); // Fiber
   if (workInProgress === null) {
     workInProgress = rootWorkInProgress;
   }
-
   return rootWorkInProgress;
 }
 
@@ -90,7 +94,6 @@ function performUnitOfWork(unitOfWork: Fiber): void {
   const current = unitOfWork.alternate;
   // !1. beginWork
   let next = beginWork(current, unitOfWork);
-  console.log(next, "next===>");
   // ! 把pendingProps更新到memoizedProps
   unitOfWork.memoizedProps = unitOfWork.pendingProps;
 
@@ -99,6 +102,7 @@ function performUnitOfWork(unitOfWork: Fiber): void {
     // !2. completeWork
     completeUnitOfWork(unitOfWork);
   } else {
+    // workInProgress 指向下一个要处理的 fiber
     workInProgress = next;
   }
 }

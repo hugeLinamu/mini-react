@@ -35,10 +35,9 @@ function updateHostRoot(
   current: Fiber | null,
   workInProgress: Fiber,
 ): Fiber | null {
+  // render 传进来 JSX
   const nextChildren = workInProgress.memoizedState.element;
-
-  console.log("nextChildren", nextChildren);
-
+  // 此时current 和 workInProgress 为 HostRoot Fiber
   reconcileChildren(current, workInProgress, nextChildren);
 
   if (current) {

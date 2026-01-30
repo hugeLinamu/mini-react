@@ -28,7 +28,6 @@ export const createRoot = (
 ): RootType => {
   // 创建FiberRoot，并创建一个Fiber 挂载在current上
   const root: FiberRoot = createFiberRoot(container);
-
   return new ReactDOMRoot(root);
 };
 

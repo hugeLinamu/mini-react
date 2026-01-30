@@ -60,8 +60,8 @@ export type Fiber = {
 export type Container = Element | Document | DocumentFragment;
 
 export type FiberRoot = {
-  containerInfo: Container;
-  current: Fiber;
+  containerInfo: Container; // DOM 容器
+  current: Fiber; // 当前生效的 Fiber 树
   // 一个准备提交的Fiber work-in-progress， HostRoot
   finishedWork: Fiber | null;
   pendingLanes: Lanes;
