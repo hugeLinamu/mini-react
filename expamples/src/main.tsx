@@ -5,6 +5,9 @@ import "./index.css";
 
 const element = <div className="box border">
   <h1 className="border">Lin</h1>
+  <h2>
+    react
+  </h2>
 </div>;
 
 ReactDOM.createRoot(document.getElementById("root")!).render(element);

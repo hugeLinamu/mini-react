@@ -34,6 +34,7 @@ function commitReconciliationEffects(finishedWork: Fiber) {
 }
 
 function commitPlacement(finishedWork: Fiber) {
+  debugger
   const parentFiber = getHostParentFiber(finishedWork);
   // 插入⽗dom
   if (finishedWork.stateNode && finishedWork.tag === HostComponent) {

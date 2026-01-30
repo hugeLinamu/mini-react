@@ -19,8 +19,8 @@ export function completeWork(
       finalizeInitialChildren(instance, workInProgress.pendingProps);
       // 3. 把子dom挂载到父dom上
       appendAllChildren(instance, workInProgress);
-      workInProgress.stateNode = instance
-      return null
+      workInProgress.stateNode = instance;
+      return null;
     }
   }
 
@@ -47,7 +47,10 @@ function finalizeInitialChildren(domElement: Element, props: any) {
 
 function appendAllChildren(parent: Element, workInProgress: Fiber) {
   let nodeFiber = workInProgress.child;
-  if (nodeFiber) {
-    parent.appendChild(nodeFiber.stateNode);
+  while (nodeFiber !== null) {
+    if (nodeFiber) {
+      parent.appendChild(nodeFiber.stateNode);
+    }
+    nodeFiber = nodeFiber.sibling;
   }
 }
