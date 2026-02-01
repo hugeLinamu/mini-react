@@ -1,6 +1,6 @@
 import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber";
 import type { Fiber } from "./ReactInternalTypes";
-import { HostComponent, HostRoot } from "./ReactWorkTags";
+import { HostComponent, HostRoot, HostText } from "./ReactWorkTags";
 import { isNum, isStr } from "shared/utils";
 
 /**
@@ -19,8 +19,12 @@ export function beginWork(
   switch (workInProgress.tag) {
     case HostRoot:
       return updateHostRoot(current, workInProgress);
+    // 原生标签
     case HostComponent:
       return updateHostComponent(current, workInProgress);
+    // 文本
+    case HostText:
+      return updateHostText(current, workInProgress);
   }
   // TODO
 
@@ -64,6 +68,11 @@ function updateHostComponent(
   reconcileChildren(current, workInProgress, nextChildren);
 
   return workInProgress.child;
+}
+
+// 文本没有子节点，不需要协调
+function updateHostText(current: Fiber | null, workInProgress: Fiber) {
+  return null;
 }
 
 // 协调子节点，构建新的fiber树

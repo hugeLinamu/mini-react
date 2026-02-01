@@ -1,8 +1,8 @@
 import { REACT_ELEMENT_TYPE } from "shared/ReactSymbols";
-import { ChildDeletion, Placement } from "./ReactFiberFlags";
+import { Placement } from "./ReactFiberFlags";
 import type { Fiber } from "./ReactInternalTypes";
 import type { ReactElement } from "shared/ReactTypes";
-import { createFiberFromElement } from "./ReactFiber";
+import { createFiberFromElement, createFiberFromText } from "./ReactFiber";
 import { isArray } from "shared/utils";
 
 type ChildReconciler = (
@@ -45,6 +45,12 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
   }
 
   function createChild(returnFiber: Fiber, newChild: any) {
+    if (isText(newChild)) {
+      const created = createFiberFromText(newChild + "");
+      created.return = returnFiber;
+      return created;
+    }
+
     if (typeof newChild === "object" && newChild !== null) {
       switch (newChild.$$typeof) {
         case REACT_ELEMENT_TYPE: {
@@ -88,6 +94,18 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
     return resultingFirstChild;
   }
 
+  // 协调单个文本节点
+  function reconcileSingleTextNode(
+    returnFiber: Fiber,
+    currentFirstChild: Fiber | null,
+    textContent: string,
+  ): Fiber {
+    const created = createFiberFromText(textContent);
+    created.return = returnFiber;
+    console.log(created, "de");
+    return created;
+  }
+
   /**
    *
    * @param returnFiber 父Fiber，协调子节点需要把子Fiber挂在父Fiber上
@@ -100,9 +118,15 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
     currentFirstChild: Fiber | null,
     newChild: any,
   ) {
+    // 文本节点
+    if (isText(newChild)) {
+      return placeSingleChild(
+        reconcileSingleTextNode(returnFiber, currentFirstChild, newChild + ""),
+      );
+    }
+
     // 检查newChild类型，单个节点、文本、数组
     if (typeof newChild === "object" && newChild !== null) {
-      console.log(newChild, "newChild===>");
       switch (newChild.$$typeof) {
         case REACT_ELEMENT_TYPE: {
           // 单个子节点
@@ -123,4 +147,11 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
   }
 
   return reconcileChildFibers;
+}
+
+function isText(newChild: any) {
+  return (
+    (typeof newChild === "string" && newChild !== "") ||
+    typeof newChild === "number"
+  );
 }

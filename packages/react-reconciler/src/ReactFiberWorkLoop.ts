@@ -36,8 +36,7 @@ export function performConcurrentWorkOnRoot(root: FiberRoot) {
   // 已经构建好的fiber树
   const finishedWork = root.current.alternate;
   console.log(finishedWork, "finishedWork===>");
-  
-    debugger
+
   root.finishedWork = finishedWork; // 根Fiber
   // ! 2. commit, 构建DOM（commitWork） VDOM->DOM
   commitRoot(root);
@@ -99,6 +98,8 @@ function performUnitOfWork(unitOfWork: Fiber): void {
   unitOfWork.memoizedProps = unitOfWork.pendingProps;
 
   if (next === null) {
+    console.log(unitOfWork,'unitOfWork===>')
+    
     // 没有产生新的work
     // !2. completeWork
     completeUnitOfWork(unitOfWork);

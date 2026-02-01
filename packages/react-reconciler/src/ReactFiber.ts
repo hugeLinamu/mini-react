@@ -1,6 +1,6 @@
 import { NoFlags } from "./ReactFiberFlags";
 import { NoLanes } from "./ReactFiberLane";
-import { Fiber } from "./ReactInternalTypes";
+import type { Fiber } from "./ReactInternalTypes";
 import {
   ClassComponent,
   ContextConsumer,
@@ -8,10 +8,11 @@ import {
   Fragment,
   FunctionComponent,
   HostComponent,
+  HostText,
   IndeterminateComponent,
   MemoComponent,
-  WorkTag,
 } from "./ReactWorkTags";
+import type { WorkTag } from "./ReactWorkTags";
 import type { ReactElement } from "shared/ReactTypes";
 import {
   REACT_CONTEXT_TYPE,
@@ -118,7 +119,7 @@ export function createFiberFromTypeAndProps(
 
 export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
   let workInProgress = current.alternate;
-  
+
   if (workInProgress === null) {
     workInProgress = createFiber(current.tag, pendingProps, current.key);
     workInProgress.elementType = current.elementType;
@@ -146,4 +147,14 @@ export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
   workInProgress.index = current.index;
 
   return workInProgress;
+}
+
+/**
+ * 创建文本类型的Fiber
+ * @param content 文本内容
+ * @returns
+ */
+export function createFiberFromText(content: string): Fiber {
+  const fiber = createFiber(HostText, content, null);
+  return fiber;
 }
