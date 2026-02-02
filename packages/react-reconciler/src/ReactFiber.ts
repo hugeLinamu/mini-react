@@ -92,8 +92,9 @@ export function createFiberFromTypeAndProps(
 ) {
   let fiberTag: WorkTag = IndeterminateComponent;
 
+  // 函数组件、类组件
   if (typeof type === "function") {
-    // 函数组件、类组件
+    // 类组件的原型上有 isReactComponent 属性
     if (type.prototype.isReactComponent) {
       fiberTag = ClassComponent;
     } else {

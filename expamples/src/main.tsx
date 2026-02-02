@@ -1,5 +1,5 @@
 // import { createRoot } from 'react-dom/client'
-import { ReactDOM, Fragment } from "../which-react";
+import { ReactDOM, Fragment, Component } from "../which-react";
 import "./index.css";
 
 // let element = (
@@ -62,11 +62,32 @@ const element: any = (
 );
  */
 
-const element: any = (
-  <Fragment key="sy">
-    <h3>1</h3>
-    <h4>2</h4>
-  </Fragment>
-);
+/** 渲染类组件
+ * 
+class ClassComponent extends Component {
+  render() {
+    return (
+      <div>
+        <h3>ClassComponent</h3>
+      </div>
+    );
+  }
+}
+
+const element = <ClassComponent />;
+
+ */
+
+class ClassComponent extends Component {
+  render() {
+    return (
+      <div>
+        <h3>ClassComponent</h3>
+      </div>
+    );
+  }
+}
+
+const element = <ClassComponent />;
 
 ReactDOM.createRoot(document.getElementById("root")!).render(element);
