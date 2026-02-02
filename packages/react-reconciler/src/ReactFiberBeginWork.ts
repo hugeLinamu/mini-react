@@ -3,6 +3,7 @@ import type { Fiber } from "./ReactInternalTypes";
 import {
   ClassComponent,
   Fragment,
+  FunctionComponent,
   HostComponent,
   HostRoot,
   HostText,
@@ -35,6 +36,8 @@ export function beginWork(
       return updateHostFragment(current, workInProgress);
     case ClassComponent:
       return updateClassComponent(current, workInProgress);
+    case FunctionComponent:
+      return updateFunctionComponent(current, workInProgress);
   }
   // TODO
 
@@ -94,11 +97,17 @@ function updateHostFragment(current: Fiber | null, workInProgress: Fiber) {
 
 // 协调类组件
 function updateClassComponent(current: Fiber | null, workInProgress: Fiber) {
-  debugger
   const { type, pendingProps } = workInProgress;
   const instance = new type(pendingProps);
   workInProgress.stateNode = instance;
   const children = instance.render();
+  reconcileChildren(current, workInProgress, children);
+  return workInProgress.child;
+}
+
+function updateFunctionComponent(current: Fiber | null, workInProgress: Fiber) {
+  const { type, pendingProps } = workInProgress;
+  const children = type(pendingProps);
   reconcileChildren(current, workInProgress, children);
   return workInProgress.child;
 }

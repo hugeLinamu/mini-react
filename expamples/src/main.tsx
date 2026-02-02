@@ -63,7 +63,6 @@ const element: any = (
  */
 
 /** 渲染类组件
- * 
 class ClassComponent extends Component {
   render() {
     return (
@@ -75,19 +74,28 @@ class ClassComponent extends Component {
 }
 
 const element = <ClassComponent />;
-
  */
 
-class ClassComponent extends Component {
-  render() {
-    return (
-      <div>
-        <h3>ClassComponent</h3>
-      </div>
-    );
-  }
+/** 渲染函数组件
+function FunctionComponent() {
+  return (
+    <div>
+      <h3>FunctionComponent</h3>
+    </div>
+  );
 }
 
-const element = <ClassComponent />;
+const element = <FunctionComponent />;
+ */
+
+function FunctionComponent() {
+  return (
+    <div>
+      <h3>FunctionComponent</h3>
+    </div>
+  );
+}
+
+const element = <FunctionComponent />;
 
 ReactDOM.createRoot(document.getElementById("root")!).render(element);
