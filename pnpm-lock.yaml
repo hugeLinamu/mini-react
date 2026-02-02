@@ -12,7 +12,14 @@ importers:
         specifier: ^4.0.17
         version: 4.0.17
 
-  packages/react: {}
+  packages/react:
+    dependencies:
+      react-reconciler:
+        specifier: workspace:*
+        version: link:../react-reconciler
+      shared:
+        specifier: workspace:*
+        version: link:../shared
 
   packages/react-dom:
     dependencies:

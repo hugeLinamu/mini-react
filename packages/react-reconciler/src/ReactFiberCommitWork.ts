@@ -39,7 +39,6 @@ function commitPlacement(finishedWork: Fiber) {
     finishedWork.stateNode &&
     (finishedWork.tag === HostComponent || finishedWork.tag === HostText)
   ) {
-
     // finishedWork是有dom节点
     const domNode = finishedWork.stateNode;
     // 找domNode的⽗DOM节点对应的fiber
@@ -52,6 +51,19 @@ function commitPlacement(finishedWork: Fiber) {
     }
     // 向父节点添加 dom节点
     parent.appendChild(domNode);
+    /**
+     * 直接渲染的时候会触发下面的条件
+     *   <>
+          <h3>1</h3>
+          <h4>2</h4>
+        </>
+     */
+  } else {
+    let kid = finishedWork.child;
+    while (kid !== null) {
+      commitPlacement(kid);
+      kid = kid.sibling;
+    }
   }
 }
 

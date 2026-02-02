@@ -1,6 +1,6 @@
 import { isNum, isStr } from "shared/utils";
 import type { Fiber } from "./ReactInternalTypes";
-import { HostComponent, HostRoot, HostText } from "./ReactWorkTags";
+import { Fragment, HostComponent, HostRoot, HostText } from "./ReactWorkTags";
 
 export function completeWork(
   current: Fiber | null,
@@ -8,6 +8,7 @@ export function completeWork(
 ): Fiber | null {
   const newProps = workInProgress.pendingProps;
   switch (workInProgress.tag) {
+    case Fragment:
     case HostRoot: {
       return null;
     }
@@ -26,7 +27,7 @@ export function completeWork(
     // 文本
     case HostText: {
       workInProgress.stateNode = document.createTextNode(newProps);
-      console.log(workInProgress.stateNode,'===>')
+      console.log(workInProgress.stateNode, "===>");
       return null;
     }
   }
@@ -52,11 +53,27 @@ function finalizeInitialChildren(domElement: Element, props: any) {
   }
 }
 
+// 将子元素挂载到当前元素上
 function appendAllChildren(parent: Element, workInProgress: Fiber) {
-  let nodeFiber = workInProgress.child;
+  let nodeFiber = workInProgress.child; // 链表结构
   while (nodeFiber !== null) {
-    if (nodeFiber) {
+    if (nodeFiber.tag === HostComponent || nodeFiber.tag === HostText) {
       parent.appendChild(nodeFiber.stateNode);
+    } else if (nodeFiber.child !== null) {
+      // 对于 Fragment 组件，会进到这个条件语句中
+      // 如果node这个fiber本⾝不直接对应DOM节点，那么就往下找它的⼦节点
+      nodeFiber = nodeFiber.child;
+      continue;
+    }
+    if (nodeFiber === workInProgress) {
+      return;
+    }
+    // 如果nodeFiber没有兄弟节点了，那么就往上找它的⽗节点
+    while (nodeFiber.sibling === null) {
+      if (nodeFiber.return === null || nodeFiber.return === workInProgress) {
+        return;
+      }
+      nodeFiber = nodeFiber.return;
     }
     nodeFiber = nodeFiber.sibling;
   }

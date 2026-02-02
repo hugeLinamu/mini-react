@@ -45,6 +45,7 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
   }
 
   function createChild(returnFiber: Fiber, newChild: any) {
+    // 对于文本节点，根据文本节点类型以及其内容，创建文本节点的Fiber
     if (isText(newChild)) {
       const created = createFiberFromText(newChild + "");
       created.return = returnFiber;

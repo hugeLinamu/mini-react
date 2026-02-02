@@ -20,6 +20,7 @@ import {
   REACT_MEMO_TYPE,
   REACT_PROVIDER_TYPE,
 } from "shared/ReactSymbols";
+import { isStr } from "shared/utils";
 
 // 创建一个fiber
 export function createFiber(
@@ -98,7 +99,7 @@ export function createFiberFromTypeAndProps(
     } else {
       fiberTag = FunctionComponent;
     }
-  } else if (typeof type === "string") {
+  } else if (isStr(type)) {
     // 原生标签
     fiberTag = HostComponent;
   } else if (type === REACT_FRAGMENT_TYPE) {

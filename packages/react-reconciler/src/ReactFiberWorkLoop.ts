@@ -109,7 +109,7 @@ function performUnitOfWork(unitOfWork: Fiber): void {
   }
 }
 
-// 深度优先遍历，子节点、兄弟节点、叔叔节点、爷爷的兄弟节点...
+// 深度优先遍历，子节点 -> 兄弟节点 -> 叔叔节点 -> 爷爷的兄弟节点...
 function completeUnitOfWork(unitOfWork: Fiber) {
   let completedWork = unitOfWork;
   do {
