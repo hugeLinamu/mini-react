@@ -1,4 +1,5 @@
 import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber";
+import { renderWithHooks } from "./ReactFiberHooks";
 import type { Fiber } from "./ReactInternalTypes";
 import {
   ClassComponent,
@@ -107,7 +108,7 @@ function updateClassComponent(current: Fiber | null, workInProgress: Fiber) {
 
 function updateFunctionComponent(current: Fiber | null, workInProgress: Fiber) {
   const { type, pendingProps } = workInProgress;
-  const children = type(pendingProps);
+  const children = renderWithHooks(current, workInProgress, type, pendingProps);
   reconcileChildren(current, workInProgress, children);
   return workInProgress.child;
 }

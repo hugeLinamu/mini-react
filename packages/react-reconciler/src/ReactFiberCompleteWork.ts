@@ -57,7 +57,13 @@ function finalizeInitialChildren(domElement: Element, props: any) {
         domElement.textContent = nextProp + "";
       }
     } else {
-      (domElement as any)[propKey] = nextProp;
+      // 3. 设置属性
+      // 3.1 事件
+      if (propKey === "onClick") {
+        domElement.addEventListener("click", nextProp);
+      } else {
+        (domElement as any)[propKey] = nextProp;
+      }
     }
   }
 }

@@ -31,11 +31,9 @@ export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
 export function performConcurrentWorkOnRoot(root: FiberRoot) {
   // ! 1. render, 根据FiberRoot 构建fiber树 VDOM（beginWork|completeWork）
   renderRootSync(root);
-  console.log(root, "renderRootSync===>");
 
   // 已经构建好的fiber树
   const finishedWork = root.current.alternate;
-  console.log(finishedWork, "finishedWork===>");
 
   root.finishedWork = finishedWork; // 根Fiber
   // ! 2. commit, 构建DOM（commitWork） VDOM->DOM
@@ -74,8 +72,8 @@ function commitRoot(root: FiberRoot) {
 function prepareFreshStack(root: FiberRoot): Fiber {
   root.finishedWork = null;
   workInProgressRoot = root; // FiberRoot
-  // 根据 HostRoot Fiber 创建（或复用）一个“工作中的 Fiber”（workInProgress）并挂载到 HostRoot Filber 的 alternate 上
-  // 用于本次 render 阶段的计算，而不影响当前已挂载的 Fiber 树
+  // 对于初次渲染阶段，根据 HostRoot Fiber 创建一颗新的 Fiber 树，并挂载到 HostRoot Filber 的 alternate 上，用于本次 render 阶段的计算，而不影响当前已挂载的 Fiber 树
+  // 对于更新阶段
   const rootWorkInProgress = createWorkInProgress(root.current, null); // Fiber
   if (workInProgress === null) {
     workInProgress = rootWorkInProgress;
@@ -93,12 +91,13 @@ function workLoopSync() {
 function performUnitOfWork(unitOfWork: Fiber): void {
   const current = unitOfWork.alternate;
   // !1. beginWork
+  // 对于初次渲染，只有 HostRoot Fiber 的 alternate 不为空，其他Fiber的 alternate 都是 null
+  // 对于更新阶段，
   let next = beginWork(current, unitOfWork);
   // ! 把pendingProps更新到memoizedProps
   unitOfWork.memoizedProps = unitOfWork.pendingProps;
 
   if (next === null) {
-    console.log(unitOfWork,'unitOfWork===>')
     
     // 没有产生新的work
     // !2. completeWork
