@@ -24,13 +24,18 @@ export function completeWork(
     case HostComponent: {
       // 原生标签,type是标签名,如 div， span...
       const { type } = workInProgress;
-      // 1. 创建真实DOM
-      const instance = document.createElement(type);
-      // 2. 初始化DOM属性
-      finalizeInitialChildren(instance, newProps);
-      // 3. 把子dom挂载到父dom上
-      appendAllChildren(instance, workInProgress);
-      workInProgress.stateNode = instance;
+      // 更新阶段
+      if (current !== null && workInProgress.stateNode !== null) {
+        updateHostComponent(current, workInProgress, type, newProps);
+      } else {
+        // 1. 创建真实DOM
+        const instance = document.createElement(type);
+        // 2. 初始化DOM属性
+        finalizeInitialChildren(instance, null, newProps);
+        // 3. 把子dom挂载到父dom上
+        appendAllChildren(instance, workInProgress);
+        workInProgress.stateNode = instance;
+      }
       return null;
     }
     // 文本
@@ -47,13 +52,55 @@ export function completeWork(
   );
 }
 
+function updateHostComponent(
+  current: Fiber | null,
+  workInProgress: Fiber,
+  type: string,
+  newProps: any,
+) {
+  if (current?.memoizedProps === newProps) {
+    return;
+  }
+
+  finalizeInitialChildren(
+    workInProgress.stateNode as Element,
+    current?.memoizedProps,
+    newProps,
+  );
+}
+
 // 初始化dom属性
-function finalizeInitialChildren(domElement: Element, props: any) {
-  for (const propKey in props) {
-    const nextProp = props[propKey];
+function finalizeInitialChildren(
+  domElement: Element,
+  prevProps: any,
+  nextProps: any,
+) {
+  // 遍历老的props
+  for (const propKey in prevProps) {
+    const prevProp = prevProps[propKey];
     // 如果children是文本，当作文本属性处理就好了
     if (propKey === "children") {
+      if (isStr(prevProp) || isNum(prevProp)) {
+        domElement.textContent = "";
+      }
+    } else {
+      // 3. 设置属性
+      // 3.1 事件
+      if (propKey === "onClick") {
+        domElement.removeEventListener("click", prevProp);
+      } else {
+        if (!(prevProp in prevProps)) {
+          (domElement as any)[propKey] = "";
+        }
+      }
+    }
+  }
+  // 遍历新的props
+  for (const propKey in nextProps) {
+    const nextProp = nextProps[propKey];
+    if (propKey === "children") {
       if (isStr(nextProp) || isNum(nextProp)) {
+        // 属性
         domElement.textContent = nextProp + "";
       }
     } else {

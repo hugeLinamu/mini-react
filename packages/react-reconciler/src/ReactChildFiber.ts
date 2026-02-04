@@ -2,7 +2,11 @@ import { REACT_ELEMENT_TYPE } from "shared/ReactSymbols";
 import { Placement } from "./ReactFiberFlags";
 import type { Fiber } from "./ReactInternalTypes";
 import type { ReactElement } from "shared/ReactTypes";
-import { createFiberFromElement, createFiberFromText } from "./ReactFiber";
+import {
+  createFiberFromElement,
+  createFiberFromText,
+  createWorkInProgress,
+} from "./ReactFiber";
 import { isArray } from "shared/utils";
 
 type ChildReconciler = (
@@ -31,14 +35,42 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
     return newFiber;
   }
 
+  function useFiber(fiber: Fiber, pendingProps: any) {
+    const clone = createWorkInProgress(fiber, pendingProps);
+    clone.index = 0;
+    clone.sibling = null;
+    return clone;
+  }
+
   // 协调单个节点，对于页面初次渲染，创建fiber，不涉及对比复用老节点
   // new (1)
   // old 2 [1] 3 4
   function reconcileSingleElement(
     returnFiber: Fiber,
-    currentFirstChild: Fiber | null,
+    currentFirstChild: Fiber | null, // 老的子节点链表
     element: ReactElement,
   ) {
+    // !节点复用条件: 同一层级， key相同，类型相同
+    const key = element.key; // 新元素的key
+    let child = currentFirstChild;
+    while (child !== null) {
+      // key 相同
+      if (child.key === key) {
+        const elementType = element.type;
+        // 类型相同,复用fiber
+        if (child.elementType === elementType) {
+          const existing = useFiber(child, element.props);
+          existing.return = returnFiber;
+          return existing;
+        } else {
+          // React 不认为同一层级下有两个key相同的元素
+          break;
+        }
+      }
+      // key不相同，在同一层级中 继续向后查找
+      child = child.sibling;
+    }
+
     let createdFiber = createFiberFromElement(element);
     createdFiber.return = returnFiber;
     return createdFiber;
@@ -92,6 +124,7 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
       }
       return resultingFirstChild;
     }
+    // ! TODO 待完善
     return resultingFirstChild;
   }
 
@@ -140,6 +173,7 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
     }
     // 子节点是数组
     if (isArray(newChild)) {
+      
       return reconcileChildrenArray(returnFiber, currentFirstChild, newChild);
     }
 

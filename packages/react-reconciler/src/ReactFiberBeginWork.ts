@@ -17,7 +17,7 @@ import { isNum, isStr } from "shared/utils";
  * 根据 Fiber 类型，走不同的更新逻辑
  * 返回 下一个要处理的 子 Fiber
  *
- * @param current 屏幕上那棵树的 Fiber（可能为 null）
+ * @param current 老的 Fiber
  * @param workInProgress 正在构建的新 Fiber
  */
 export function beginWork(
@@ -108,6 +108,7 @@ function updateClassComponent(current: Fiber | null, workInProgress: Fiber) {
 
 function updateFunctionComponent(current: Fiber | null, workInProgress: Fiber) {
   const { type, pendingProps } = workInProgress;
+  // 调用FunctionComponent 得到的新的 JSX
   const children = renderWithHooks(current, workInProgress, type, pendingProps);
   reconcileChildren(current, workInProgress, children);
   return workInProgress.child;

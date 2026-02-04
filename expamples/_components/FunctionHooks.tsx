@@ -3,19 +3,16 @@
 import { useReducer } from "../which-react";
 
 export default function FunctionHooksComponent() {
-  const [count, setCount] = useReducer((x: number) => x + 1, 0);
+  const [count, setCount] = useReducer((pre: number) => pre + 1, 1);
 
   return (
-    <div>
-      <h3>FunctionComponent</h3>
-      <div>{count}</div>
+    <div className="box border">
       <button
         onClick={() => {
-          console.log('213123')
-          setCount(count + 1);
+          setCount();
         }}
       >
-        +1
+        {count}
       </button>
     </div>
   );

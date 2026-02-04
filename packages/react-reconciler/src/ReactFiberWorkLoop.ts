@@ -31,7 +31,6 @@ export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
 export function performConcurrentWorkOnRoot(root: FiberRoot) {
   // ! 1. render, 根据FiberRoot 构建fiber树 VDOM（beginWork|completeWork）
   renderRootSync(root);
-
   // 已经构建好的fiber树
   const finishedWork = root.current.alternate;
 
@@ -91,6 +90,7 @@ function workLoopSync() {
 function performUnitOfWork(unitOfWork: Fiber): void {
   const current = unitOfWork.alternate;
   // !1. beginWork
+  // current 是旧的Fiber， unitOfWork 是只能在构建中的新 Fiber
   // 对于初次渲染，只有 HostRoot Fiber 的 alternate 不为空，其他Fiber的 alternate 都是 null
   // 对于更新阶段，
   let next = beginWork(current, unitOfWork);
@@ -98,7 +98,6 @@ function performUnitOfWork(unitOfWork: Fiber): void {
   unitOfWork.memoizedProps = unitOfWork.pendingProps;
 
   if (next === null) {
-    
     // 没有产生新的work
     // !2. completeWork
     completeUnitOfWork(unitOfWork);
