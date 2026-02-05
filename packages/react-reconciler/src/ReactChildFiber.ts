@@ -8,6 +8,7 @@ import {
   createWorkInProgress,
 } from "./ReactFiber";
 import { isArray } from "shared/utils";
+import { HostText } from "./ReactWorkTags";
 
 type ChildReconciler = (
   returnFiber: Fiber,
@@ -105,7 +106,7 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
         // key 不相同，删除单个节点
         deleteChild(returnFiber, child);
       }
-      
+
       // key不相同，在同一层级中 继续向后查找
       child = child.sibling;
     }
@@ -135,15 +136,170 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
     return null;
   }
 
+  function updateTextNode(
+    returnFiber: Fiber,
+    current: Fiber | null,
+    textContent: string,
+  ) {
+    if (current === null || current.tag !== HostText) {
+      // 老节点不是文本
+      const created = createFiberFromText(textContent);
+      created.return = returnFiber;
+      return created;
+    } else {
+      // 老节点是文本
+      const existing = useFiber(current, textContent);
+      existing.return = returnFiber;
+      return existing;
+    }
+  }
+
+  /**
+   * 更新元素，如果类型相同，则复用Fiber，否则创建一个新的Fiber
+   */
+  function updateElement(
+    returnFiber: Fiber,
+    current: Fiber | null,
+    element: ReactElement,
+  ) {
+    const elementType = element.type;
+    if (current !== null) {
+      if (current.elementType === elementType) {
+        // 类型相同
+        const existing = useFiber(current, element.props);
+        existing.return = returnFiber;
+        return existing;
+      }
+    }
+
+    const created = createFiberFromElement(element);
+    created.return = returnFiber;
+    return created;
+  }
+
+  function updateSlot(
+    returnFiber: Fiber,
+    oldFiber: Fiber | null,
+    newChild: any,
+  ) {
+    // 判断节点是否可以复用
+    const key = oldFiber !== null ? oldFiber.key : null;
+    if (isText(newChild)) {
+      if (key !== null) {
+        // 新节点是文本，老节点不是文本
+        return null;
+      }
+      // 有可能可以复用
+      return updateTextNode(returnFiber, oldFiber, newChild + "");
+    }
+
+    if (typeof newChild === "object" && newChild !== null) {
+      if (newChild.key === key) {
+        return updateElement(returnFiber, oldFiber, newChild);
+      } else {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  function placeChild(
+    newFiber: Fiber,
+    lastPlacedIndex: number, // 记录的是新fiber在老fiber上的位置
+    newIndex: number,
+  ) {
+    newFiber.index = newIndex;
+
+    if (!shouldTrackSideEffects) {
+      return lastPlacedIndex;
+    }
+
+    // 判断节点位置是否发生相对位置变化，是否需要移动
+    const current = newFiber.alternate;
+    // 复用的节点，newFiber.alternate 不为 null
+    // 新创建的节点的 newFiber.alternate 为null
+    if (current !== null) {
+      const oldIndex = current.index;
+      if (oldIndex < lastPlacedIndex) {
+        // 上一次 0 1 2
+        // 这一次 0 2 1
+        // 节点需要移动位置
+        newFiber.flags |= Placement;
+        return lastPlacedIndex;
+      } else {
+        // 不需要移动位置
+        return oldIndex;
+      }
+    } else {
+      // 节点是新增
+      newFiber.flags |= Placement;
+      return lastPlacedIndex;
+    }
+  }
+
   function reconcileChildrenArray(
     returnFiber: Fiber,
     currentFirstChild: Fiber | null,
     newChildren: Array<any>,
   ) {
-    let resultingFirstChild: Fiber | null = null; // 头节点
+    let resultFirstChild: Fiber | null = null; // 头节点
     let previousNewFiber: Fiber | null = null;
     let oldFiber = currentFirstChild;
+    let nextOldFiber = null; // oldFiber.sibling
     let newIdx = 0;
+    let lastPlacedIndex = 0;
+
+    // ! 1. 从左往右遍历，按位置比较，如果可以复用，那就复用。不能复用，退出本轮
+    for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
+      if (oldFiber.index > newIdx) {
+        debugger;
+        nextOldFiber = oldFiber;
+        oldFiber = null;
+      } else {
+        nextOldFiber = oldFiber.sibling;
+      }
+      // 可以复用，则返回复用的 Fiber，不能复用则返回 null
+      const newFiber = updateSlot(returnFiber, oldFiber, newChildren[newIdx]);
+      if (newFiber === null) {
+        if (oldFiber === null) {
+          oldFiber = nextOldFiber;
+        }
+        break;
+      }
+
+      // 更新阶段
+      if (shouldTrackSideEffects) {
+        // 旧Fiber存在，但是updateSlot是创建了新的Fiber， 则删除旧的Fiber
+        if (oldFiber && newFiber?.alternate === null) {
+          deleteChild(returnFiber, oldFiber);
+        }
+      }
+
+      // 判断节点在DOM的相对位置是否发生变化
+      //  组件更新阶段，判断在更新前后的位置是否一致，如果不一致，需要移动
+      lastPlacedIndex = placeChild(newFiber as Fiber, lastPlacedIndex, newIdx);
+
+      if (previousNewFiber === null) {
+        // 第一个节点，不要用newIdx判断，因为有可能有null，而null不是有效fiber
+        resultFirstChild = newFiber as Fiber;
+      } else {
+        previousNewFiber.sibling = newFiber as Fiber;
+      }
+      previousNewFiber = newFiber as Fiber;
+
+      oldFiber = nextOldFiber;
+    }
+
+    // !2.1 所有新节点都复用了旧的节点， （并且老节点还有）。则删除剩余的老节点即可
+    // 如 old： 1，2，3，4，5，6，7
+    //    new： 1，2，3，4
+    if (newIdx === newChildren.length) {
+      deleteRemainingChildren(returnFiber, oldFiber);
+      return resultFirstChild;
+    }
+
+    // ! 2.2 (新节点还有)，老节点没了
     if (oldFiber === null) {
       for (; newIdx < newChildren.length; newIdx++) {
         const newFiber = createChild(returnFiber, newChildren[newIdx]);
@@ -151,20 +307,27 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
         if (newFiber === null) {
           continue;
         }
+
+        lastPlacedIndex = placeChild(
+          newFiber as Fiber,
+          lastPlacedIndex,
+          newIdx,
+        );
+
         // 记录当前元素的索引
         newFiber.index = newIdx;
         // 子Fiber中的 头节点，不能使用index，因为 null 不会被创建为fiber
         if (previousNewFiber === null) {
-          resultingFirstChild = newFiber;
+          resultFirstChild = newFiber;
         } else {
           previousNewFiber.sibling = newFiber;
         }
         previousNewFiber = newFiber;
       }
-      return resultingFirstChild;
+      return resultFirstChild;
     }
     // ! TODO 待完善
-    return resultingFirstChild;
+    return resultFirstChild;
   }
 
   // 协调单个文本节点

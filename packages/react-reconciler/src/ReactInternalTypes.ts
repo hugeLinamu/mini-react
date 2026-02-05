@@ -42,6 +42,11 @@ export type Fiber = {
   memoizedState: any;
 
   // Effect， ,组件要新增还是删除还是更新。。。
+  // 一般用 位运算 
+  // |= （累加）状态位，有1取1，如 flags |= Update , flags |= Placement; 表示 这个节点：既需要 Update，又需要 Placement
+  // ~=(按位取反) 状态位，
+  // ChildDeletion     = 0000010000
+  // ~ChildDeletion    = 1111101111  flags ~= ChildDeletion 表示ChildDeletion被删除了，其他操作还在
   flags: Flags;
 
   // 缓存fiber，同一个组件，在内存里永远有两份 Fiber，目的是解决在不影响当前 UI 的情况下，提前计算下一次 UI
