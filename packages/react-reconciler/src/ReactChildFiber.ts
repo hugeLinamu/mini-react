@@ -136,6 +136,7 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
     return null;
   }
 
+  // 决定复用或创建文本节点
   function updateTextNode(
     returnFiber: Fiber,
     current: Fiber | null,
@@ -238,11 +239,62 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
     }
   }
 
+  // 将剩余的老节点放入 Map 中
+  function mapRemainingChildren(oldFiber: Fiber): Map<string | number, Fiber> {
+    const existingChildren: Map<string | number, Fiber> = new Map();
+    let existingChild: Fiber | null = oldFiber;
+    while (existingChild !== null) {
+      if (existingChild.key !== null) {
+        existingChildren.set(existingChild.key, existingChild);
+      } else {
+        existingChildren.set(existingChild.index, existingChild);
+      }
+      existingChild = existingChild.sibling;
+    }
+
+    return existingChildren;
+  }
+
+  // 从 Map 中获取节点并更新
+  function updateFromMap(
+    existingChildren: Map<string | number, Fiber>,
+    returnFiber: Fiber,
+    newIdx: number,
+    newChild: any,
+  ): Fiber | null {
+    if (isText(newChild)) {
+      // 文本节点没有key
+      const matchedFiber = existingChildren.get(newIdx) || null;
+      return updateTextNode(returnFiber, matchedFiber, newChild + "");
+    } else if (typeof newChild === "object" && newChild !== null) {
+      const matchedFiber =
+        existingChildren.get(newChild.key === null ? newIdx : newChild.key) ||
+        null;
+      return updateElement(returnFiber, matchedFiber, newChild);
+    }
+
+    return null;
+  }
+
   /**
-   * 1.从左边往右遍历，⽐较新⽼节点，如果节点可以复⽤，继续往右，否则就停⽌
+   * 1.  从左边往右遍历，⽐较新⽼节点，如果节点可以复⽤，继续往右，否则就停⽌
+   *
+   * 2.1 ， 2.2， 2.3是互斥的，只能进入其中之一
    * 2.1 所有新节点都复用了旧的节点， （但是老节点还有）。则删除剩余的老节点即可
+   *     如 old： 1，2，3，4，5，6，7
+   *        new： 1，2，3，4
    * 2.2 (新节点还有)，但是老节点没了。则创建新节点即可
-   * 
+   *     如 old： 1，2，3，4
+   *        new： 1，2，3，4，5，6，7
+   * 2.3 剩余场景
+   *    如 old： 0，1，2，3，4
+   *       new： 0，1，2，4
+   *    在2之后，节点都不可复用，新⽼节点都还有剩余，老节点剩余（3，4），新节点剩余（4），因为⽼ fiber 是链表，不⽅便快速 get 与 delete 老节点,
+   *    因此把⽼ fiber 链表中的节点放⼊ Map 中，后续操作这个 Map 的 get 与 delete 来复用老节点
+   *    此时需要从 老节点中 get 4节点，然后 delete 3节点即可
+   *
+   * 3.  最后查找 Map ⾥是否还有元素，如果有，则证明是新节点⾥不能复⽤的,
+   *     也就是要被删除的元素，此时删除这些元素就可以了
    */
   function reconcileChildrenArray(
     returnFiber: Fiber,
@@ -332,7 +384,43 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
       }
       return resultFirstChild;
     }
-    // ! TODO 待完善
+
+    // ! 2.3 剩余场景
+    // 将剩余的老节点放入 Map 中
+    const existingChildren = mapRemainingChildren(oldFiber);
+    for (; newIdx < newChildren.length; newIdx++) {
+      const newFiber = updateFromMap(
+        existingChildren,
+        returnFiber,
+        newIdx,
+        newChildren[newIdx],
+      );
+      if (newFiber !== null) {
+        if (shouldTrackSideEffects) {
+          existingChildren.delete(
+            newFiber.key === null ? newIdx : newFiber.key,
+          );
+        }
+        lastPlacedIndex = placeChild(
+          newFiber as Fiber,
+          lastPlacedIndex,
+          newIdx,
+        );
+        if (previousNewFiber === null) {
+          // 第一个节点，不要用newIdx判断，因为有可能有null，而null不是有效fiber
+          resultFirstChild = newFiber;
+        } else {
+          previousNewFiber.sibling = newFiber;
+        }
+        previousNewFiber = newFiber;
+      }
+    }
+
+    // !3. 如果新节点已经构建完了，但是老节点还有
+    if (shouldTrackSideEffects) {
+      existingChildren.forEach((child) => deleteChild(returnFiber, child));
+    }
+
     return resultFirstChild;
   }
 
