@@ -3,17 +3,27 @@
 import { useReducer } from "../which-react";
 
 export default function FunctionHooksComponent() {
-  const [count, setCount] = useReducer((pre: number) => pre + 1, 1);
+  const [count, setCount] = useReducer((pre: number) => pre + 1, 0);
 
   return (
     <div className="box border">
-      <button
-        onClick={() => {
-          setCount();
-        }}
-      >
-        {count}
-      </button>
+      {count % 2 === 0 ? (
+        <button
+          onClick={() => {
+            setCount();
+          }}
+        >
+          {count}
+        </button>
+      ) : (
+        <span
+          onClick={() => {
+            setCount();
+          }}
+        >
+          click {count}
+        </span>
+      )}
     </div>
   );
 }

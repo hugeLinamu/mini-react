@@ -47,7 +47,7 @@ export type Fiber = {
   // 缓存fiber，同一个组件，在内存里永远有两份 Fiber，目的是解决在不影响当前 UI 的情况下，提前计算下一次 UI
   alternate: Fiber | null;
 
-  // 记录要删除的子节点
+  // 记录要删除的子节点数组
   deletions: Array<Fiber> | null;
 
   // 记录effect

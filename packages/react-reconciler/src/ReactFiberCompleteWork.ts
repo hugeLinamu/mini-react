@@ -140,3 +140,8 @@ function appendAllChildren(parent: Element, workInProgress: Fiber) {
     nodeFiber = nodeFiber.sibling;
   }
 }
+
+// fiber.stateNode是DOM节点
+export function isHost(fiber: Fiber): boolean {
+  return fiber.tag === HostComponent || fiber.tag === HostText;
+}

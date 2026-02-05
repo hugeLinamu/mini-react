@@ -1,4 +1,5 @@
-import { Placement } from "./ReactFiberFlags";
+import { isHost } from "./ReactFiberCompleteWork";
+import { ChildDeletion, Placement } from "./ReactFiberFlags";
 import type { FiberRoot, Fiber } from "./ReactInternalTypes";
 import { HostComponent, HostRoot, HostText } from "./ReactWorkTags";
 
@@ -31,14 +32,22 @@ function commitReconciliationEffects(finishedWork: Fiber) {
     // 清除flags，做非的与运算
     finishedWork.flags &= ~Placement;
   }
+  // 删除子节点
+  if (flags & ChildDeletion) {
+    // parentFiber 是 deletions的 父dom 对应的fiber
+    const parentFiber = isHostParent(finishedWork)
+      ? finishedWork
+      : getHostParentFiber(finishedWork);
+    const parentDOM = parentFiber.stateNode;
+    commitDeletions(finishedWork.deletions!, parentDOM);
+    finishedWork.flags &= ~ChildDeletion;
+    finishedWork.deletions = null;
+  }
 }
 
 function commitPlacement(finishedWork: Fiber) {
   // 插入⽗dom
-  if (
-    finishedWork.stateNode &&
-    (finishedWork.tag === HostComponent || finishedWork.tag === HostText)
-  ) {
+  if (finishedWork.stateNode && isHost(finishedWork)) {
     // finishedWork是有dom节点
     const domNode = finishedWork.stateNode;
     // 找domNode的⽗DOM节点对应的fiber
@@ -64,6 +73,31 @@ function commitPlacement(finishedWork: Fiber) {
       commitPlacement(kid);
       kid = kid.sibling;
     }
+  }
+}
+
+/**
+ * 根据fiber 删除子dom节点
+ * @param deletions 子Fiber数组
+ * @param parentDOM 父dom
+ */
+function commitDeletions(
+  deletions: Array<Fiber>,
+  parentDOM: Element | Document | DocumentFragment,
+) {
+  deletions.forEach((deletion) => {
+    const childNode = getStateNode(deletion);
+    parentDOM.removeChild(childNode);
+  });
+}
+
+function getStateNode(fiber: Fiber) {
+  let node = fiber;
+  while (1) {
+    if (isHost(node) && node.stateNode) {
+      return node.stateNode;
+    }
+    node = node.child as Fiber;
   }
 }
 

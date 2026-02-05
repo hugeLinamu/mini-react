@@ -1,5 +1,5 @@
 import { REACT_ELEMENT_TYPE } from "shared/ReactSymbols";
-import { Placement } from "./ReactFiberFlags";
+import { ChildDeletion, Placement } from "./ReactFiberFlags";
 import type { Fiber } from "./ReactInternalTypes";
 import type { ReactElement } from "shared/ReactTypes";
 import {
@@ -27,6 +27,39 @@ export const mountChildFibers: ChildReconciler = createChildReconciler(false);
  * @returns
  */
 function createChildReconciler(shouldTrackSideEffects: boolean) {
+  // 删除单个子节点
+  function deleteChild(returnFiber: Fiber, childToDelete: Fiber) {
+    if (!shouldTrackSideEffects) {
+      return;
+    }
+
+    const deletions = returnFiber.deletions;
+    if (deletions === null) {
+      returnFiber.deletions = [childToDelete];
+      returnFiber.flags |= ChildDeletion;
+    } else {
+      returnFiber.deletions!.push(childToDelete);
+    }
+  }
+
+  // 删除整个子节点链表
+  function deleteRemainingChildren(
+    returnFiber: Fiber,
+    currentFirstChild: Fiber | null,
+  ) {
+    if (!shouldTrackSideEffects) {
+      return;
+    }
+
+    let childToDelete = currentFirstChild;
+    while (childToDelete !== null) {
+      deleteChild(returnFiber, childToDelete);
+      childToDelete = childToDelete.sibling;
+    }
+
+    return null;
+  }
+
   // 给fiber节点添加flags
   function placeSingleChild(newFiber: Fiber) {
     if (shouldTrackSideEffects && newFiber.alternate === null) {
@@ -63,10 +96,16 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
           existing.return = returnFiber;
           return existing;
         } else {
+          // key相同，但类型不同
           // React 不认为同一层级下有两个key相同的元素
+          deleteRemainingChildren(returnFiber, child);
           break;
         }
+      } else {
+        // key 不相同，删除单个节点
+        deleteChild(returnFiber, child);
       }
+      
       // key不相同，在同一层级中 继续向后查找
       child = child.sibling;
     }
@@ -173,7 +212,6 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
     }
     // 子节点是数组
     if (isArray(newChild)) {
-      
       return reconcileChildrenArray(returnFiber, currentFirstChild, newChild);
     }
 
