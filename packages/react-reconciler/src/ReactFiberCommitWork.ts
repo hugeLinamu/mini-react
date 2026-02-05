@@ -48,18 +48,20 @@ function commitReconciliationEffects(finishedWork: Fiber) {
 function commitPlacement(finishedWork: Fiber) {
   // 插入⽗dom
   if (finishedWork.stateNode && isHost(finishedWork)) {
-    // finishedWork是有dom节点
-    const domNode = finishedWork.stateNode;
     // 找domNode的⽗DOM节点对应的fiber
     const parentFiber = getHostParentFiber(finishedWork);
 
     // 获取⽗dom节点
-    let parent = parentFiber.stateNode;
-    if (parent.containerInfo) {
-      parent = parent.containerInfo;
+    let parentDom = parentFiber.stateNode;
+    if (parentDom.containerInfo) {
+      parentDom = parentDom.containerInfo;
     }
+
     // 向父节点添加 dom节点
-    parent.appendChild(domNode);
+    const before = getHostSibling(finishedWork);
+    // 向父节点添加 dom节点
+    insertOrAppendPlacementNode(finishedWork, before, parentDom);
+
     /**
      * 直接渲染的时候会触发下面的条件
      *   <>
@@ -77,6 +79,47 @@ function commitPlacement(finishedWork: Fiber) {
 }
 
 /**
+ *  在 commit 阶段插入 DOM 时，React 用的是：parent.insertBefore(newNode, beforeNode);
+ *  但问题是： Fiber 树 ≠ DOM 树
+ *    右边的 fiber 可能：
+ *    是函数组件（没 DOM）
+ *    是还没插入的节点（Placement）
+ *    是一个组件，需要往下找 child
+ */
+function getHostSibling(fiber: Fiber) {
+  let node = fiber;
+  sibling: while (1) {
+    // 这个条件是因为下面 while 一直往子节点找，找不到时，需要回到父节点继续找 sibling
+    while (node.sibling === null) {
+      if (node.return === null || isHostParent(node.return)) {
+        return null;
+      }
+      node = node.return;
+    }
+    node = node.sibling;
+    // 如果为函数组件，stateNode 不是 dom 节点
+    while (!isHost(node)) {
+      // 这个节点需要 新增插入 或 移动位置
+      if (node.flags & Placement) {
+        // 跳到 sibling 循环
+        continue sibling; 
+      }
+      // 往下找子节点，如果没有子节点，则 跳到 sibling 循环
+      if (node.child === null) {
+        continue sibling;
+      } else {
+        node = node.child;
+      }
+    }
+
+    // HostComponent|HostText 类型的Fiber，stateNode为真正的 dom 节点
+    if (!(node.flags & Placement)) {
+      return node.stateNode;
+    }
+  }
+}
+
+/**
  * 根据fiber 删除子dom节点
  * @param deletions 子Fiber数组
  * @param parentDOM 父dom
@@ -89,6 +132,20 @@ function commitDeletions(
     const childNode = getStateNode(deletion);
     parentDOM.removeChild(childNode);
   });
+}
+
+// 新增插入 | 位置移动
+// insertBefore | appendChild
+function insertOrAppendPlacementNode(
+  node: Fiber,
+  before: Element,
+  parent: Element,
+) {
+  if (before) {
+    parent.insertBefore(getStateNode(node), before);
+  } else {
+    parent.appendChild(getStateNode(node));
+  }
 }
 
 function getStateNode(fiber: Fiber) {
