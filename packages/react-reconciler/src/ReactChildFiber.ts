@@ -238,6 +238,12 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
     }
   }
 
+  /**
+   * 1.从左边往右遍历，⽐较新⽼节点，如果节点可以复⽤，继续往右，否则就停⽌
+   * 2.1 所有新节点都复用了旧的节点， （但是老节点还有）。则删除剩余的老节点即可
+   * 2.2 (新节点还有)，但是老节点没了。则创建新节点即可
+   * 
+   */
   function reconcileChildrenArray(
     returnFiber: Fiber,
     currentFirstChild: Fiber | null,
@@ -291,7 +297,7 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
       oldFiber = nextOldFiber;
     }
 
-    // !2.1 所有新节点都复用了旧的节点， （并且老节点还有）。则删除剩余的老节点即可
+    // !2.1 所有新节点都复用了旧的节点， （但是老节点还有）。则删除剩余的老节点即可
     // 如 old： 1，2，3，4，5，6，7
     //    new： 1，2，3，4
     if (newIdx === newChildren.length) {
