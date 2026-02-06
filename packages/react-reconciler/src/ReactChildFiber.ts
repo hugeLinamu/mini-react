@@ -20,12 +20,12 @@ export const reconcileChildFibers: ChildReconciler =
   createChildReconciler(true);
 export const mountChildFibers: ChildReconciler = createChildReconciler(false);
 
-// wrapper function
-// 协调子节点
 /**
+ * 该函数是为了：构建新的子Fiber结构
+ * shouldTrackSideEffects 为 false 表示 组件初次挂载, 直接创建新的Fiber
+ * shouldTrackSideEffects 为 true 表示组件更新，需要进行vdom diff， 检查老的节点是否可复用，可复用直接复用，不能复用则删除或创建新节点
  * 生成两套不同的 children diff 实现：一套用于首次挂载（不追踪副作用），一套用于更新阶段（追踪副作用）。
- * @param shouldTrackSideEffects 表示：在 children diff 过程中，是否需要记录真实 DOM 变更的副作用（Placement / Deletion / Update）。
- * @returns
+ * @param shouldTrackSideEffects 表示：在 children diff 更新过程中过程中，是否需要记录真实 DOM 变更的副作用（Placement / Deletion / Update）。
  */
 function createChildReconciler(shouldTrackSideEffects: boolean) {
   // 删除单个子节点
@@ -63,6 +63,7 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
 
   // 给fiber节点添加flags
   function placeSingleChild(newFiber: Fiber) {
+    // 需要更新，并且这个Fiber 没有缓冲的Fiber，说明是新创建的，不是复用的Fiber
     if (shouldTrackSideEffects && newFiber.alternate === null) {
       newFiber.flags |= Placement;
     }
@@ -76,9 +77,18 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
     return clone;
   }
 
-  // 协调单个节点，对于页面初次渲染，创建fiber，不涉及对比复用老节点
-  // new (1)
-  // old 2 [1] 3 4
+  /**
+   * 协调单个节点 ： 新节点只有一个，老节点是一个链表，可以一直往后找
+   * 对于节点初次渲染： currentFirstChild 为空，直接创建fiber，不涉及对比复用老节点
+   * 对于节点更新阶段： currentFirstChild 为旧Fiber的第一个子节点，需要对比复用
+   *    进入这个条件时，他们已经处于同一层级
+   *    old： 3 -> 2 -> 1 -> 4
+   *    new： 1
+   *    a. 如果 key 相同
+   *       a1. 类型 相同，则直接复用之前的fiber
+   *       a2. 类型 不同，则标记后面所有的子节点都需要删除，并根据元素类型创建新的 Fiber
+   *    b. 如果 key 不相同， 直接标记这个节点为需要删除，并根据元素类型创建新的 Fiber
+   */
   function reconcileSingleElement(
     returnFiber: Fiber,
     currentFirstChild: Fiber | null, // 老的子节点链表
@@ -111,6 +121,9 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
       child = child.sibling;
     }
 
+    // 两种情况进入这里：
+    // 1. 初次挂载
+    // 2. 节点不可复用
     let createdFiber = createFiberFromElement(element);
     createdFiber.return = returnFiber;
     return createdFiber;
@@ -455,7 +468,7 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
       );
     }
 
-    // 检查newChild类型，单个节点、文本、数组
+    // 检查newChild类型，单个节点、数组、
     if (typeof newChild === "object" && newChild !== null) {
       switch (newChild.$$typeof) {
         case REACT_ELEMENT_TYPE: {

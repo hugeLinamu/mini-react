@@ -23,6 +23,9 @@ export default function FunctionComponent() {
           <li key={"li" + item}>{item}</li>
         ))}
       </ul>
+      {count1 % 2 === 0 ? <div>null</div> : null}
+      {count1 % 2 === 0 ? <div>undefined</div> : undefined}
+      {count1 % 2 === 0 && <div>boolean</div>}
 
       <div className="border">
         <div>useState</div>
