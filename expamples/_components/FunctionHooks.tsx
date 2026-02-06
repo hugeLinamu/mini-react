@@ -1,10 +1,12 @@
 // import { useReducer, useState } from "react";
 
-import { useReducer } from "../which-react";
+import { useReducer, useState } from "../which-react";
 
 export default function FunctionComponent() {
   const [count1, setCount1] = useReducer((x: number) => x + 1, 0);
-  const arr = count1 % 2 === 0 ? [0, 1, 2, 3, 4] : [0, 1, 2, 4];
+  const [state, setState] = useState(1);
+
+  const arr = count1 % 2 === 0 ? [0, 1, 2, 3, 4] : [3, 2, 0, 4, 1];
   // 0 删除
   return (
     <div className="border">
@@ -21,6 +23,11 @@ export default function FunctionComponent() {
           <li key={"li" + item}>{item}</li>
         ))}
       </ul>
+
+      <div className="border">
+        <div>useState</div>
+        <button onClick={() => setState(state + 1)}>{state}</button>
+      </div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { isFn } from "shared/utils";
 import { Lanes, NoLanes } from "./ReactFiberLane";
 import { scheduleUpdateOnFiber } from "./ReactFiberWorkLoop";
 import { Fiber, FiberRoot } from "./ReactInternalTypes";
@@ -131,7 +132,7 @@ function dispatchReducerAction<S, A>(
   // 更新阶段，Fiber 的alternate 赋值，除了 Host Fiber，其他的Fiber只有在更新阶段才有 alternate 属性
   fiber.alternate = { ...fiber };
 
-  scheduleUpdateOnFiber(root!, fiber);
+  scheduleUpdateOnFiber(root!, fiber,true);
 }
 
 // 根据 sourceFiber 找根节点
@@ -145,4 +146,12 @@ function getRootForUpdatedFiber(sourceFiber: Fiber): FiberRoot | null {
   }
 
   return node.tag === HostRoot ? node.stateNode : null;
+}
+
+// 源码中useState与useReducer对比
+// useState,如果state没有改变，不引起组件更新。useReducer不是如此。
+// reducer 代表state修改规则，useReducer比较方便服用这个规则
+export function useState<S>(initialState: (() => S) | S) {
+  const init = isFn(initialState) ? (initialState as any)() : initialState;
+  return useReducer(null, init);
 }

@@ -22,10 +22,18 @@ let executionContext: ExecutionContext = NoContext;
 let workInProgress: Fiber | null = null; // 当前正在工作的 Fiber
 let workInProgressRoot: FiberRoot | null = null; // 当前正在工作的 FiberRoot
 
-export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
+export function scheduleUpdateOnFiber(
+  root: FiberRoot,
+  fiber: Fiber,
+  isSync: boolean = false,
+) {
   workInProgressRoot = root;
   workInProgress = fiber;
-  ensureRootIsScheduled(root);
+  if (isSync) {
+    queueMicrotask(() => performConcurrentWorkOnRoot(root));
+  } else {
+    ensureRootIsScheduled(root);
+  }
 }
 
 export function performConcurrentWorkOnRoot(root: FiberRoot) {
