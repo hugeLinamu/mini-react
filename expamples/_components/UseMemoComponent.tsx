@@ -1,11 +1,14 @@
 // import { useReducer, useState } from "react";
 
-import { useReducer, useState } from "../which-react";
+import { useMemo, useReducer, useState } from "../which-react";
 
 export default function FunctionComponent() {
   const [count1, setCount1] = useReducer((x: number) => x + 1, 0);
   const [state, setState] = useState(1);
 
+  const result = useMemo(() => {
+    console.log(123213213)
+  }, [state]);
 
   const arr = count1 % 2 === 0 ? [0, 1, 2, 3, 4] : [3, 2, 0, 4, 1];
   // 0 删除
@@ -24,9 +27,6 @@ export default function FunctionComponent() {
           <li key={"li" + item}>{item}</li>
         ))}
       </ul>
-      {count1 % 2 === 0 ? <div>null</div> : null}
-      {count1 % 2 === 0 ? <div>undefined</div> : undefined}
-      {count1 % 2 === 0 && <div>boolean</div>}
 
       <div className="border">
         <div>useState</div>

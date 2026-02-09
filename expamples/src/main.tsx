@@ -2,7 +2,8 @@
 // import FragmentElement from "../_components/FragmentNodeRender";
 // import ClassComponent from "../_components/ClassNodeRender";
 // import FunctionComponent from "../_components/FunctionNodeRender";
-import FunctionHooksComponent from "../_components/FunctionHooks";
+// import FunctionHooksComponent from "../_components/FunctionHooks";
+import UseMemoHooks from '../_components/UseMemoComponent'
 
 import { ReactDOM } from "../which-react";
 import "./index.css";
@@ -15,5 +16,5 @@ import "./index.css";
 // );
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <FunctionHooksComponent />,
+  <UseMemoHooks />,
 );

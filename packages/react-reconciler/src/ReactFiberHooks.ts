@@ -132,7 +132,7 @@ function dispatchReducerAction<S, A>(
   // 更新阶段，Fiber 的alternate 赋值，除了 Host Fiber，其他的Fiber只有在更新阶段才有 alternate 属性
   fiber.alternate = { ...fiber };
 
-  scheduleUpdateOnFiber(root!, fiber,true);
+  scheduleUpdateOnFiber(root!, fiber, true);
 }
 
 // 根据 sourceFiber 找根节点
@@ -154,4 +154,44 @@ function getRootForUpdatedFiber(sourceFiber: Fiber): FiberRoot | null {
 export function useState<S>(initialState: (() => S) | S) {
   const init = isFn(initialState) ? (initialState as any)() : initialState;
   return useReducer(null, init);
+}
+
+export function useMemo<T>(
+  nextCreate: () => T,
+  deps: Array<any> | void | null,
+): T {
+  const hook = updateWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  const prevState = hook.memoizedState;
+  // 上一次的 Hook 链表中当前hook 缓存的值
+  if (prevState !== null) {
+    // 当前依赖项存在，需要更上一次的依赖性比较，
+    // 相同则直接返回上一次 nextCreate 计算的结果
+    // 不相同则重新调用 nextCreate，并缓存计算结果
+    if (nextDeps !== null) {
+      const prevDeps: Array<any> | null = prevState[1];
+      if (areHookInputsEqual(nextDeps as any, prevDeps)) {
+        return prevState[0];
+      }
+    }
+  }
+  const nextValue = nextCreate();
+  hook.memoizedState = [nextValue, nextDeps];
+  return nextValue;
+}
+
+export function areHookInputsEqual(
+  nextDeps: Array<any>,
+  prevDeps: Array<any> | null,
+): boolean {
+  if (prevDeps === null) {
+    return false;
+  }
+  for (let i = 0; i < prevDeps.length && i < nextDeps.length; i++) {
+    if (Object.is(nextDeps[i], prevDeps[i])) {
+      continue;
+    }
+    return false;
+  }
+  return true;
 }
