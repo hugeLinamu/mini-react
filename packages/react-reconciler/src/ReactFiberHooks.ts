@@ -1,7 +1,7 @@
 import { isFn } from "shared/utils";
-import { Lanes, NoLanes } from "./ReactFiberLane";
+import type { Lanes, NoLanes } from "./ReactFiberLane";
 import { scheduleUpdateOnFiber } from "./ReactFiberWorkLoop";
-import { Fiber, FiberRoot } from "./ReactInternalTypes";
+import type { Fiber, FiberRoot } from "./ReactInternalTypes";
 import { HostRoot } from "./ReactWorkTags";
 
 // Hook 链表
@@ -178,6 +178,25 @@ export function useMemo<T>(
   const nextValue = nextCreate();
   hook.memoizedState = [nextValue, nextDeps];
   return nextValue;
+}
+
+export function useCallback<T>(callback: T, deps: Array<any> | void | null): T {
+  const hook = updateWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  const prevState = hook.memoizedState;
+  // 检查依赖项是否发⽣变化
+  if (prevState !== null) {
+    if (nextDeps !== null) {
+      const prevDeps = prevState[1];
+      if (areHookInputsEqual(nextDeps, prevDeps)) {
+        // 依赖项没有变化，返回上⼀次缓存的callback
+        console.log("依赖项没有变化，返回上一次缓存的callback");
+        return prevState[0];
+      }
+    }
+  }
+  hook.memoizedState = [callback, nextDeps];
+  return callback;
 }
 
 export function areHookInputsEqual(
