@@ -314,6 +314,7 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
     currentFirstChild: Fiber | null,
     newChildren: Array<any>,
   ) {
+    // debugger;
     let resultFirstChild: Fiber | null = null; // 头节点
     let previousNewFiber: Fiber | null = null;
     let oldFiber = currentFirstChild;
@@ -324,7 +325,7 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
     // ! 1. 从左往右遍历，按位置比较，如果可以复用，那就复用。不能复用，退出本轮
     for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
       if (oldFiber.index > newIdx) {
-        debugger;
+        // debugger;
         nextOldFiber = oldFiber;
         oldFiber = null;
       } else {

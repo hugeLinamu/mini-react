@@ -199,6 +199,15 @@ export function useCallback<T>(callback: T, deps: Array<any> | void | null): T {
   return callback;
 }
 
+export function useRef<T>(initialValue: T): { current: T } {
+  const hook = updateWorkInProgressHook();
+  if (currentHook === null) {
+    const ref = { current: initialValue };
+    hook.memoizedState = ref;
+  }
+  return hook.memoizedState;
+}
+
 export function areHookInputsEqual(
   nextDeps: Array<any>,
   prevDeps: Array<any> | null,
