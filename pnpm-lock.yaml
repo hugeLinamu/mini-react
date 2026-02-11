@@ -47,6 +47,9 @@ importers:
 
   packages/react-reconciler:
     dependencies:
+      react-dom-bindings:
+        specifier: workspace:*
+        version: link:../react-dom-bindings
       scheduler:
         specifier: workspace:*
         version: link:../scheduler

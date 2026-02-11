@@ -11,7 +11,8 @@
   "license": "ISC",
   "packageManager": "pnpm@10.26.1",
   "dependencies": {
-    "shared":"workspace:*",
-    "scheduler":"workspace:*"
+    "shared": "workspace:*",
+    "scheduler": "workspace:*",
+    "react-dom-bindings": "workspace:*"
   }
 }

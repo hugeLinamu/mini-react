@@ -7,9 +7,60 @@ import {
   addEventCaptureListener,
   addEventBubbleListener,
 } from "./EventListener";
+import type { Fiber } from "react-reconciler/src/ReactInternalTypes";
+import type { ReactSyntheticEvent } from "./plugins/ReactSyntheticEventType";
+import { HostComponent } from "react-reconciler/src/ReactWorkTags";
+import getListener from "./getListener";
+
+export type AnyNativeEvent = Event | KeyboardEvent | MouseEvent | TouchEvent;
+
+export type DispatchListener = {
+  instance: null | Fiber;
+  listener: Function;
+  currentTarget: EventTarget;
+};
+
+type DispatchEntry = {
+  event: ReactSyntheticEvent;
+  listeners: Array<DispatchListener>;
+};
+
+export type DispatchQueue = Array<DispatchEntry>;
 
 // 注册基本事件
 SimpleEventPlugin.registerEvents();
+
+export function extractEvents(
+  dispatchQueue: DispatchQueue,
+  domEventName: DOMEventName,
+  targetInst: null | Fiber,
+  nativeEvent: AnyNativeEvent,
+  nativeEventTarget: null | EventTarget,
+  eventSystemFlags: EventSystemFlags,
+  targetContainer: EventTarget,
+) {
+  SimpleEventPlugin.extractEvents(
+    dispatchQueue,
+    domEventName,
+    targetInst,
+    nativeEvent,
+    nativeEventTarget,
+    eventSystemFlags,
+    targetContainer,
+  );
+
+  // if ((eventSystemFlags & SHOULD_NOT_PROCESS_POLYFILL_EVENT_PLUGINS) === 0) {
+  //   ChangeEventPlugin.extractEvents(
+  //     dispatchQueue,
+  //     domEventName,
+  //     targetInst,
+  //     nativeEvent,
+  //     nativeEventTarget,
+  //     eventSystemFlags,
+  //     targetContainer,
+  //   );
+  // }
+}
 
 // 媒体元素
 export const mediaEventTypes: Array<DOMEventName> = [
@@ -143,4 +194,46 @@ function addTrappedEventListener(
       isPassiveListener,
     );
   }
+}
+
+/**
+ * 在某一个阶段（只 capture 或只 bubble）向上遍历 Fiber 树，把所有对应的监听函数收集起来
+ */
+export function accumulateSinglePhaseListeners(
+  targetFiber: Fiber | null, // 事件发生的目标元素 对应的fiber
+  reactName: string | null, // 事件名，如 onClick
+  nativeEventType: string, // 原生事件名，如 click
+  inCapturePhase: boolean, // 是否是捕获阶段
+  accumulateTargetOnly: boolean, // 是否只收集目标元素的监听函数
+  nativeEvent: AnyNativeEvent, // 原生事件对象
+): Array<DispatchListener> {
+  const captureName = reactName !== null ? reactName + "Capture" : null;
+  const reactEventName = inCapturePhase ? captureName : reactName;
+  let listeners: Array<DispatchListener> = [];
+
+  let instance = targetFiber;
+
+  // 通过target -> root累积所有fiber和listeners。
+  while (instance !== null) {
+    const { stateNode, tag } = instance;
+    // 处理位于HostComponents（即 <div> 元素）上的listeners
+    if (tag === HostComponent && stateNode !== null) {
+      // 标准 React on* listeners, i.e. onClick or onClickCapture
+      const listener = getListener(instance, reactEventName as string);
+      if (listener != null) {
+        listeners.push({
+          instance,
+          listener,
+          currentTarget: stateNode,
+        });
+      }
+    }
+    // 如果只是为target累积事件，那么我们就不会继续通过 React Fiber 树传播以查找其它listeners。
+    if (accumulateTargetOnly) {
+      break;
+    }
+
+    instance = instance.return;
+  }
+  return listeners;
 }

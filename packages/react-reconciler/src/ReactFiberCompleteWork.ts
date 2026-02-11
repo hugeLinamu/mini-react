@@ -8,6 +8,10 @@ import {
   HostRoot,
   HostText,
 } from "./ReactWorkTags";
+import {
+  precacheFiberNode,
+  updateFiberProps,
+} from "react-dom-bindings/src/client/ReactDOMComponentTree";
 
 export function completeWork(
   current: Fiber | null,
@@ -36,12 +40,19 @@ export function completeWork(
         appendAllChildren(instance, workInProgress);
         workInProgress.stateNode = instance;
       }
+      // 将fiber存到dom元素上,事件绑定的时候用到
+      precacheFiberNode(workInProgress, workInProgress.stateNode as Element);
+      // 将props存到dom元素上,事件绑定的时候用到
+      updateFiberProps(workInProgress.stateNode, newProps);
       return null;
     }
     // 文本
     case HostText: {
       workInProgress.stateNode = document.createTextNode(newProps);
-      console.log(workInProgress.stateNode, "===>");
+      // 将Fiber存到dom元素上,事件绑定的时候用到
+      precacheFiberNode(workInProgress, workInProgress.stateNode as Element);
+      // 将props存到dom元素上,事件绑定的时候用到
+      updateFiberProps(workInProgress.stateNode, newProps);
       return null;
     }
   }
@@ -87,7 +98,7 @@ function finalizeInitialChildren(
       // 3. 设置属性
       // 3.1 事件
       if (propKey === "onClick") {
-        domElement.removeEventListener("click", prevProp);
+        // domElement.removeEventListener("click", prevProp);
       } else {
         if (!(prevProp in prevProps)) {
           (domElement as any)[propKey] = "";
@@ -107,7 +118,7 @@ function finalizeInitialChildren(
       // 3. 设置属性
       // 3.1 事件
       if (propKey === "onClick") {
-        domElement.addEventListener("click", nextProp);
+        // domElement.addEventListener("click", nextProp);
       } else {
         (domElement as any)[propKey] = nextProp;
       }
