@@ -2,6 +2,7 @@ import type { ReactNodeList } from "shared/ReactTypes";
 import { createFiberRoot } from "react-reconciler/src/ReactFiberRoot";
 import { updateContainer } from "react-reconciler/src/ReactFiberReconciler";
 import type { FiberRoot } from "react-reconciler/src/ReactInternalTypes";
+import { listenToAllSupportedEvents } from "react-dom-bindings/src/events/DOMPluginEventSystem";
 
 type RootType = {
   render: (children: ReactNodeList) => void;
@@ -26,6 +27,8 @@ export const createRoot = (
 ): RootType => {
   // 创建FiberRoot，并创建一个Fiber 挂载在current上
   const root: FiberRoot = createFiberRoot(container);
+  // 合成事件：将事件注册到contianer，而不是dom上
+  listenToAllSupportedEvents(container);
   return new ReactDOMRoot(root);
 };
 
