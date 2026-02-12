@@ -2,7 +2,8 @@ import { useRef, useState } from "../which-react";
 
 export default function UseRefComponent() {
   let ref = useRef(0);
-  function handleClick() {
+  function handleClick(e) {
+    console.log(e,'e===>')
     ref.current = ref.current + 1;
     // alert("You clicked " + ref.current + " times!");
     console.log(ref.current);

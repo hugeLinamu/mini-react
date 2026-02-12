@@ -213,7 +213,7 @@ export function accumulateSinglePhaseListeners(
 
   let instance = targetFiber;
 
-  // 通过target -> root累积所有fiber和listeners。
+  // 通过遍历 target -> root累积所有fiber和listeners。
   while (instance !== null) {
     const { stateNode, tag } = instance;
     // 处理位于HostComponents（即 <div> 元素）上的listeners

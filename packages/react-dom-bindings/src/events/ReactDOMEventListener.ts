@@ -155,12 +155,14 @@ function processDispatchQueueItemsInOrder(
   dispatchListeners: Array<DispatchListener>,
   inCapturePhase: boolean,
 ): void {
+  // 上一次节点的Fiber
   let prevInstance: Fiber | null = null;
   if (inCapturePhase) {
     // 捕获阶段，从上往下执行
     for (let i = dispatchListeners.length - 1; i >= 0; i--) {
       const { instance, currentTarget, listener } = dispatchListeners[i];
-      if (prevInstance !== instance && event.isPropagationStopped?.()) {
+      // Fiber 不是同一个fiber，并且阻止事件传播，直接返回
+      if (prevInstance !== instance && event.isPropagationStopped()) {
         return;
       }
       executeDispatch(event, listener, currentTarget);
@@ -170,7 +172,8 @@ function processDispatchQueueItemsInOrder(
     // 冒泡阶段，从下往上执行
     for (let i = 0; i < dispatchListeners.length; i++) {
       const { instance, currentTarget, listener } = dispatchListeners[i];
-      if (prevInstance !== instance && event.isPropagationStopped?.()) {
+      // Fiber 不是同一个fiber，并且阻止事件传播，直接返回
+      if (prevInstance !== instance && event.isPropagationStopped()) {
         return;
       }
       executeDispatch(event, listener, currentTarget);
