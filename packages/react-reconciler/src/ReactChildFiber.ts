@@ -314,7 +314,6 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
     currentFirstChild: Fiber | null,
     newChildren: Array<any>,
   ) {
-    // debugger;
     let resultFirstChild: Fiber | null = null; // 头节点
     let previousNewFiber: Fiber | null = null;
     let oldFiber = currentFirstChild;

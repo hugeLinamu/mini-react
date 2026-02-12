@@ -1,14 +1,19 @@
 import type { DOMEventName } from "./DOMEventNames";
 import { allNativeEvents } from "./EventRegistry";
-import { EventSystemFlags, IS_CAPTURE_PHASE } from "./EventSystemFlags";
+import {
+  EventSystemFlags,
+  IS_CAPTURE_PHASE,
+  SHOULD_NOT_PROCESS_POLYFILL_EVENT_PLUGINS,
+} from "./EventSystemFlags";
 import * as SimpleEventPlugin from "./plugins/SimpleEventPlugin";
+import * as ChangeEventPlugin from "./plugins/ChangeEventPlugin";
 import { createEventListenerWrapperWithPriority } from "./ReactDOMEventListener";
 import {
   addEventCaptureListener,
   addEventBubbleListener,
 } from "./EventListener";
 import type { Fiber } from "react-reconciler/src/ReactInternalTypes";
-import type { ReactSyntheticEvent } from "./plugins/ReactSyntheticEventType";
+import type { ReactSyntheticEvent } from "./ReactSyntheticEventType";
 import { HostComponent } from "react-reconciler/src/ReactWorkTags";
 import getListener from "./getListener";
 
@@ -49,17 +54,17 @@ export function extractEvents(
     targetContainer,
   );
 
-  // if ((eventSystemFlags & SHOULD_NOT_PROCESS_POLYFILL_EVENT_PLUGINS) === 0) {
-  //   ChangeEventPlugin.extractEvents(
-  //     dispatchQueue,
-  //     domEventName,
-  //     targetInst,
-  //     nativeEvent,
-  //     nativeEventTarget,
-  //     eventSystemFlags,
-  //     targetContainer,
-  //   );
-  // }
+  if ((eventSystemFlags & SHOULD_NOT_PROCESS_POLYFILL_EVENT_PLUGINS) === 0) {
+    ChangeEventPlugin.extractEvents(
+      dispatchQueue,
+      domEventName,
+      targetInst,
+      nativeEvent,
+      nativeEventTarget,
+      eventSystemFlags,
+      targetContainer,
+    );
+  }
 }
 
 // 媒体元素
@@ -235,5 +240,47 @@ export function accumulateSinglePhaseListeners(
 
     instance = instance.return;
   }
+  return listeners;
+}
+
+/**
+ * 在捕获和冒泡阶段 向上遍历 Fiber 树，把所有对应的监听函数收集起来
+ */
+export function accumulateTwoPhaseListeners(
+  targetFiber: Fiber | null,
+  reactName: string | null,
+): Array<DispatchListener> {
+  const captureName = reactName !== null ? reactName + "Capture" : null;
+  let listeners: Array<DispatchListener> = [];
+
+  let instance = targetFiber;
+
+  while (instance !== null) {
+    const { stateNode, tag } = instance;
+    // 原生节点类型并且有dom元素
+    if (tag === HostComponent && stateNode !== null) {
+      const captureListener = getListener(instance, captureName as string);
+      if (captureListener != null) {
+        // 捕获阶段
+        listeners.unshift({
+          instance,
+          listener: captureListener,
+          currentTarget: stateNode,
+        });
+      }
+      // 冒泡
+      const bubbleListener = getListener(instance, reactName as string);
+      if (bubbleListener != null) {
+        // 捕获阶段，捕获阶段执行是从外到内，冒泡阶段是从内到外
+        listeners.unshift({
+          instance,
+          listener: bubbleListener,
+          currentTarget: stateNode,
+        });
+      }
+    }
+    instance = instance.return;
+  }
+
   return listeners;
 }

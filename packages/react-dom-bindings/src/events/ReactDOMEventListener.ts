@@ -25,7 +25,7 @@ import {
   extractEvents,
 } from "./DOMPluginEventSystem";
 import { getClosestInstanceFromNode } from "../client/ReactDOMComponentTree";
-import { ReactSyntheticEvent } from "./plugins/ReactSyntheticEventType";
+import { ReactSyntheticEvent } from "./ReactSyntheticEventType";
 import { invokeGuardedCallbackAndCatchFirstError } from "shared/ReactErrorUtils";
 
 /**
