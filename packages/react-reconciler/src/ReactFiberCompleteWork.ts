@@ -12,6 +12,7 @@ import {
   precacheFiberNode,
   updateFiberProps,
 } from "react-dom-bindings/src/client/ReactDOMComponentTree";
+import { registrationNameDependencies } from "react-dom-bindings/src/events/EventRegistry";
 
 export function completeWork(
   current: Fiber | null,
@@ -97,7 +98,7 @@ function finalizeInitialChildren(
     } else {
       // 3. 设置属性
       // 3.1 事件
-      if (propKey === "onClick") {
+      if (registrationNameDependencies[propKey]) {
         // domElement.removeEventListener("click", prevProp);
       } else {
         if (!(prevProp in prevProps)) {
@@ -117,7 +118,7 @@ function finalizeInitialChildren(
     } else {
       // 3. 设置属性
       // 3.1 事件
-      if (propKey === "onClick") {
+      if (registrationNameDependencies[propKey]) {
         // domElement.addEventListener("click", nextProp);
       } else {
         (domElement as any)[propKey] = nextProp;
