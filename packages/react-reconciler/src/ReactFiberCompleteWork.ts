@@ -7,6 +7,8 @@ import {
   HostComponent,
   HostRoot,
   HostText,
+  MemoComponent,
+  SimpleMemoComponent,
 } from "./ReactWorkTags";
 import {
   precacheFiberNode,
@@ -23,6 +25,8 @@ export function completeWork(
     case ClassComponent:
     case FunctionComponent:
     case Fragment:
+    case MemoComponent:
+    case SimpleMemoComponent:
     case HostRoot: {
       return null;
     }

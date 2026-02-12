@@ -5,6 +5,7 @@ export {
   useState,
   useMemo,
   useCallback,
-  useRef
+  useRef,
+  memo
 } from "../packages/react";
 export * as ReactDOM from "../packages/react-dom/client";

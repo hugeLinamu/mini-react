@@ -7,3 +7,5 @@ export {
   useCallback,
   useRef,
 } from "react-reconciler/src/ReactFiberHooks";
+export { memo } from "./src/ReactMemo";
+

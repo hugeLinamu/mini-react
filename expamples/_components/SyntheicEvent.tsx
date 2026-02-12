@@ -21,19 +21,19 @@ export default function SyntheicEventComponent() {
       <input
         type="text"
         value={text}
-        onInput={(e) => {
+        onChange={(e) => {
           setText(e.target.value);
         }}
       />
-      <p>input val:{text}</p>
+      <p>{"input val:" + text}</p>
 
       <textarea
         value={textarea}
-        onInput={(e) => {
+        onChange={(e) => {
           setTextAtea(e.target.value);
         }}
       />
-      <p>textarea val: {textarea}</p>
+      <p>{`textarea val: ${textarea}`}</p>
     </div>
   );
 }

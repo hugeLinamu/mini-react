@@ -160,3 +160,18 @@ export function createFiberFromText(content: string): Fiber {
   const fiber = createFiber(HostText, content, null);
   return fiber;
 }
+
+
+function shouldConstruct(Component: Function) {
+  const prototype = Component.prototype;
+  return !!(prototype && prototype.isReactComponent);
+}
+
+// 判断是否是函数组件
+export function isSimpleFunctionComponent(type: any): boolean {
+  return (
+    typeof type === "function" &&
+    !shouldConstruct(type) &&
+    type.defaultProps === undefined
+  );
+}

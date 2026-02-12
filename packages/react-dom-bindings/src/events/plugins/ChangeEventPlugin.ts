@@ -36,6 +36,7 @@ function extractEvents(
   const targetNode = targetInst ? targetInst.stateNode : null;
   if (isTextInputElement(targetNode)) {
     if (domEventName === "input" || domEventName === "change") {
+      // 内容没发生变更
       const inst = getInstIfValueChanged(targetInst as Fiber, targetNode);
       if (!inst) {
         return;

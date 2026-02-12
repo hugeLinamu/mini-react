@@ -1,4 +1,10 @@
+import shallowEqual from "shared/shallowEqual";
 import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber";
+import {
+  createFiberFromTypeAndProps,
+  createWorkInProgress,
+  isSimpleFunctionComponent,
+} from "./ReactFiber";
 import { renderWithHooks } from "./ReactFiberHooks";
 import type { Fiber } from "./ReactInternalTypes";
 import {
@@ -8,6 +14,8 @@ import {
   HostComponent,
   HostRoot,
   HostText,
+  MemoComponent,
+  SimpleMemoComponent,
 } from "./ReactWorkTags";
 import { isNum, isStr } from "shared/utils";
 
@@ -39,6 +47,10 @@ export function beginWork(
       return updateClassComponent(current, workInProgress);
     case FunctionComponent:
       return updateFunctionComponent(current, workInProgress);
+    case MemoComponent:
+      return updateMemoComponent(current, workInProgress);
+    case SimpleMemoComponent:
+      return updateSimpleMemoComponent(current, workInProgress);
   }
   // TODO
 
@@ -112,6 +124,71 @@ function updateFunctionComponent(current: Fiber | null, workInProgress: Fiber) {
   const children = renderWithHooks(current, workInProgress, type, pendingProps);
   reconcileChildren(current, workInProgress, children);
   return workInProgress.child;
+}
+
+function updateMemoComponent(current: Fiber | null, workInProgress: Fiber) {
+  const Component = workInProgress.type; // React.memo 包裹的子组件
+  const type = Component.type; // React.memo 包裹的子组件的 Fiber类型
+  // 组件是不是初次渲染
+  if (current === null) {
+    // 初次渲染
+    // ! 1.
+    if (
+      // 是简单的函数组件 ， 并且 memo第二个参数没有传入
+      isSimpleFunctionComponent(type) &&
+      Component.compare === null &&
+      Component.defaultProps === undefined
+    ) {
+      workInProgress.type = type; // 将正在工作的Fiber 的 type 改为子组件的 type 类型
+      workInProgress.tag = SimpleMemoComponent; // 将正在工作的Fiber 的tag 改为 SimpleMemoComponent 把子组件当作普通函数组件处理，等下再次进入 beginWork
+      return updateSimpleMemoComponent(current, workInProgress);
+    }
+    // ! 2. memo 传了第二个参数，直接创建子组件的 Fiber
+    // 创建子组件的 Fiber
+    const child = createFiberFromTypeAndProps(
+      type,
+      null,
+      workInProgress.pendingProps,
+    );
+    child.return = workInProgress;
+    workInProgress.child = child;
+    return child;
+  }
+
+  // 组件更新阶段
+  let compare = Component.compare;
+  compare = compare !== null ? compare : shallowEqual;
+  // 比较 props是否发生改变，如果为true，说明没有改变，直接退出更新
+  if (compare(current.memoizedProps, workInProgress.pendingProps)) {
+    // bail out 退出更新
+    return bailoutOnAlreadyFinishedWork();
+  }
+
+  const newChild = createWorkInProgress(
+    current.child as Fiber,
+    workInProgress.pendingProps,
+  );
+  newChild.return = workInProgress;
+  workInProgress.child = newChild;
+  return newChild;
+}
+
+function updateSimpleMemoComponent(
+  current: Fiber | null,
+  workInProgress: Fiber,
+) {
+  if (current !== null) {
+    // 组件更新,浅比较 props有没有发生改变
+    if (shallowEqual(current.memoizedProps, workInProgress.pendingProps)) {
+      // 退出渲染
+      return bailoutOnAlreadyFinishedWork();
+    }
+  }
+  return updateFunctionComponent(current, workInProgress);
+}
+
+function bailoutOnAlreadyFinishedWork() {
+  return null;
 }
 
 // 协调子节点，构建新的fiber树
