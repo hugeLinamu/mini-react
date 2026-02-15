@@ -3,11 +3,20 @@ import type { Lanes, NoLanes } from "./ReactFiberLane";
 import { scheduleUpdateOnFiber } from "./ReactFiberWorkLoop";
 import type { Fiber, FiberRoot } from "./ReactInternalTypes";
 import { HostRoot } from "./ReactWorkTags";
+import { HookFlags, HookLayout, HookPassive } from "./ReactHookEffectTags";
+import { Flags, Passive, Update } from "./ReactFiberFlags";
 
 // Hook 链表
 type Hook = {
   memoizedState: any;
   next: null | Hook;
+};
+
+type Effect = {
+  tag: HookFlags;
+  create: () => (() => void) | void;
+  deps: Array<any> | void | null;
+  next: null | Effect;
 };
 
 // 当前正在工作的函数组件的fiber
@@ -223,3 +232,91 @@ export function areHookInputsEqual(
   }
   return true;
 }
+
+export function useEffect(
+  create: () => (() => void) | void,
+  deps: Array<any> | void | null,
+) {
+  return updateEffectImpl(Update, HookLayout, create, deps);
+}
+
+export function useLayoutEffect(
+  create: () => (() => void) | void,
+  deps: Array<any> | void | null,
+) {
+  return updateEffectImpl(Passive, HookPassive, create, deps);
+}
+
+// 存储 effect
+function updateEffectImpl(
+  fiberFlags: Flags,
+  hookFlags: HookFlags,
+  create: () => (() => void) | void,
+  deps: Array<any> | void | null,
+) {
+  const hook = updateWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  if (currentHook !== null) {
+    if (nextDeps !== null) {
+      const prevDeps = currentHook.memoizedState.deps;
+      if (areHookInputsEqual(nextDeps, prevDeps)) {
+        return;
+      }
+    }
+  }
+
+  currentlyRenderingFiber!.flags |= fiberFlags;
+  // * 1. 保存effect 2. 构建effect单向循环链表
+  hook.memoizedState = pushEffect(hookFlags, create, nextDeps);
+}
+
+function pushEffect(
+  hookFlags: HookFlags,
+  create: () => (() => void) | void,
+  deps: Array<any> | void | null,
+) {
+  const effect: Effect = {
+    tag: hookFlags,
+    create,
+    deps,
+    next: null,
+  };
+
+  let componentUpdateQueue = currentlyRenderingFiber!.updateQueue;
+  // 构建单向循环链表
+  if (componentUpdateQueue === null) {
+    // 第一个effect
+    componentUpdateQueue = {
+      lastEffect: null,
+    };
+    currentlyRenderingFiber!.updateQueue = componentUpdateQueue;
+    componentUpdateQueue.lastEffect = effect.next = effect;
+  } else {
+    /**
+        6 进来之前
+          <-  <-  <-  <-  <-
+         ⬇                  ⬆
+         5 -> 1 -> 2 -> 3 -> 4
+
+        6 进来之后, 将 5 的 next 指向 6(5是更新之前的尾节点， 指向要更新的effect 6)，6的 next 指向 1（头节点）
+        并将6赋值给 componentUpdateQueue.lastEffect
+
+        6 进来之后
+          <-  <-  <-  <-  <-  <-  <
+         ⬇                       ⬆
+         6 -> 1 -> 2 -> 3 -> 4 -> 5
+     */
+    const lastEffect = componentUpdateQueue.lastEffect;
+    const firstEffect = lastEffect.next;
+    lastEffect.next = effect;
+    effect.next = firstEffect;
+    componentUpdateQueue.lastEffect = effect;
+
+    console.log('componentUpdateQueue', componentUpdateQueue);
+  }
+
+  return effect;
+}
+
+
+

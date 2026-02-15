@@ -6,6 +6,8 @@ export {
   useMemo,
   useCallback,
   useRef,
-  memo
+  memo,
+  useEffect,
+  useLayoutEffect,
 } from "../packages/react";
 export * as ReactDOM from "../packages/react-dom/client";

@@ -39,6 +39,7 @@ export function scheduleUpdateOnFiber(
 export function performConcurrentWorkOnRoot(root: FiberRoot) {
   // ! 1. render, 根据FiberRoot 构建fiber树 VDOM（beginWork|completeWork）
   renderRootSync(root);
+  console.log("root===>",root)
   // 已经构建好的fiber树
   const finishedWork = root.current.alternate;
 

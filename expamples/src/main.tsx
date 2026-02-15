@@ -8,6 +8,7 @@ import UseCallbackHooks from "../_components/UseCallbackComponent";
 import UseRefComponent from "../_components/UseRefComponent";
 import SyntheiEventComponent from "../_components/SyntheicEvent";
 import MemoComponent from "../_components/MemoComponent";
+import UseLayoutEffectUseEffectComponent from "../_components/UseLayoutEffect-UseEffect"
 
 import { ReactDOM } from "../which-react";
 import "./index.css";
@@ -19,4 +20,4 @@ import "./index.css";
 //   </div>
 // );
 
-ReactDOM.createRoot(document.getElementById("root")!).render(<MemoComponent />);
+ReactDOM.createRoot(document.getElementById("root")!).render(<UseLayoutEffectUseEffectComponent />);
