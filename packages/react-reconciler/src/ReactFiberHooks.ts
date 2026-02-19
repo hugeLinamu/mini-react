@@ -233,14 +233,14 @@ export function areHookInputsEqual(
   return true;
 }
 
-export function useEffect(
+export function useLayoutEffect(
   create: () => (() => void) | void,
   deps: Array<any> | void | null,
 ) {
   return updateEffectImpl(Update, HookLayout, create, deps);
 }
 
-export function useLayoutEffect(
+export function useEffect(
   create: () => (() => void) | void,
   deps: Array<any> | void | null,
 ) {
@@ -259,6 +259,7 @@ function updateEffectImpl(
   if (currentHook !== null) {
     if (nextDeps !== null) {
       const prevDeps = currentHook.memoizedState.deps;
+      // 依赖性没发生变更，才需要在单向循环链表中添加进去
       if (areHookInputsEqual(nextDeps, prevDeps)) {
         return;
       }
@@ -312,11 +313,8 @@ function pushEffect(
     effect.next = firstEffect;
     componentUpdateQueue.lastEffect = effect;
 
-    console.log('componentUpdateQueue', componentUpdateQueue);
+    console.log("componentUpdateQueue", componentUpdateQueue);
   }
 
   return effect;
 }
-
-
-

@@ -1,7 +1,13 @@
 import { isHost } from "./ReactFiberCompleteWork";
-import { ChildDeletion, Placement } from "./ReactFiberFlags";
+import { ChildDeletion, Placement, Update } from "./ReactFiberFlags";
+import { HookFlags, HookLayout } from "./ReactHookEffectTags";
 import type { FiberRoot, Fiber } from "./ReactInternalTypes";
-import { HostComponent, HostRoot, HostText } from "./ReactWorkTags";
+import {
+  FunctionComponent,
+  HostComponent,
+  HostRoot,
+  HostText,
+} from "./ReactWorkTags";
 
 export function commitMutationEffects(root: FiberRoot, finishedWork: Fiber) {
   // 1. 从根节点深度优先遍历整棵 Fiber 树
@@ -42,6 +48,34 @@ function commitReconciliationEffects(finishedWork: Fiber) {
     commitDeletions(finishedWork.deletions!, parentDOM);
     finishedWork.flags &= ~ChildDeletion;
     finishedWork.deletions = null;
+  }
+
+  // useLayoutEffect
+  if (flags & Update) {
+    if (finishedWork.tag === FunctionComponent) {
+      // 执行 layout effect
+      commitHookEffectListMount(HookLayout, finishedWork);
+      finishedWork.flags &= ~Update;
+    }
+  }
+}
+
+function commitHookEffectListMount(hookFlags: HookFlags, finishedWork: Fiber) {
+  const updateQueue = finishedWork.updateQueue;
+  let lastEffect = updateQueue!.lastEffect;
+  if (lastEffect !== null) {
+    // 头节点
+    const firstEffect = lastEffect.next;
+    let effect = firstEffect;
+    do {
+      if ((effect.tag & hookFlags) === hookFlags) {
+        const create = effect.create;
+        // effect 函数
+        create();
+      }
+      effect = effect.next;
+      // 因为是单向循环链表，所以条件是 effect !== firstEffect
+    } while (effect !== firstEffect);
   }
 }
 
@@ -102,7 +136,7 @@ function getHostSibling(fiber: Fiber) {
       // 这个节点需要 新增插入 或 移动位置
       if (node.flags & Placement) {
         // 跳到 sibling 循环
-        continue sibling; 
+        continue sibling;
       }
       // 往下找子节点，如果没有子节点，则 跳到 sibling 循环
       if (node.child === null) {

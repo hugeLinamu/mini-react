@@ -14,7 +14,7 @@ export default function UseLayoutEffectUseEffectComponent() {
 //   }, [count1]);
   // passive effect
   useLayoutEffect(() => {
-    console.log("useEffect1"); //sy-log
+    console.log("useLayoutEffect1"); //sy-log
   }, []);
   useEffect(() => {
     console.log("useEffect2"); //sy-log
