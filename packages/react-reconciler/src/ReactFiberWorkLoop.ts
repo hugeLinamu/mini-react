@@ -3,7 +3,11 @@ import { ensureRootIsScheduled } from "./ReactFiberRootScheduler";
 import { createWorkInProgress } from "./ReactFiber";
 import { completeWork } from "./ReactFiberCompleteWork";
 import { beginWork } from "./ReactFiberBeginWork";
-import { commitMutationEffects } from "./ReactFiberCommitWork";
+import {
+  commitMutationEffects,
+  flushPassiveEffects,
+} from "./ReactFiberCommitWork";
+import { NormalPriority, Scheduler } from "scheduler";
 
 type ExecutionContext = number;
 
@@ -39,7 +43,7 @@ export function scheduleUpdateOnFiber(
 export function performConcurrentWorkOnRoot(root: FiberRoot) {
   // ! 1. render, 根据FiberRoot 构建fiber树 VDOM（beginWork|completeWork）
   renderRootSync(root);
-  console.log("root===>",root)
+  console.log("root===>", root);
   // 已经构建好的fiber树
   const finishedWork = root.current.alternate;
 
@@ -70,7 +74,12 @@ function commitRoot(root: FiberRoot) {
   executionContext |= CommitContext;
 
   // !2.1 mutation阶段, 渲染DOM树
-  commitMutationEffects(root, root.finishedWork as Fiber); //finishedWork 为 Fiber,HostRoot=3
+  commitMutationEffects(root, root.finishedWork as Fiber); //finishedWork 为 根节点Fiber,HostRoot=3
+
+  Scheduler.scheduleCallback(NormalPriority, () => {
+    // !2.2 passive阶段, 执⾏passive effects(useEffect)
+    flushPassiveEffects(root.finishedWork!);
+  });
 
   // !3. commit结束
   executionContext = prevExecutionContext;

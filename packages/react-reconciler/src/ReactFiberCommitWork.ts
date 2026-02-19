@@ -1,6 +1,6 @@
 import { isHost } from "./ReactFiberCompleteWork";
-import { ChildDeletion, Placement, Update } from "./ReactFiberFlags";
-import { HookFlags, HookLayout } from "./ReactHookEffectTags";
+import { ChildDeletion, Passive, Placement, Update } from "./ReactFiberFlags";
+import { HookFlags, HookLayout, HookPassive } from "./ReactHookEffectTags";
 import type { FiberRoot, Fiber } from "./ReactInternalTypes";
 import {
   FunctionComponent,
@@ -12,7 +12,7 @@ import {
 export function commitMutationEffects(root: FiberRoot, finishedWork: Fiber) {
   // 1. 从根节点深度优先遍历整棵 Fiber 树
   recursivelyTraverseMutationEffects(root, finishedWork);
-  //
+  // 2. 处理协调产生的effects，比如flags: 如Placement 、Update、ChildDeletion、useLayoutEffect
   commitReconciliationEffects(finishedWork);
 }
 
@@ -209,4 +209,39 @@ function getHostParentFiber(fiber: Fiber): Fiber {
 // 检查 fiber 是否可以是⽗ dom 节点
 function isHostParent(fiber: Fiber): boolean {
   return fiber.tag === HostComponent || fiber.tag === HostRoot;
+}
+
+/**
+ * 遍历子节点，执行子节点的 useEffect
+ * @param finishedWork  为 根节点Fiber,HostRoot=3
+ */
+export function flushPassiveEffects(finishedWork: Fiber) {
+  // !1. 遍历⼦节点，检查⼦节点
+  recursivelyTraversePassiveMountEffects(finishedWork);
+  // !2. 如果有passive effects，执⾏~
+  commitPassiveEffects(finishedWork);
+}
+
+function recursivelyTraversePassiveMountEffects(finishedWork: Fiber) {
+  let child = finishedWork.child;
+  while (child !== null) {
+    // !1. 遍历子节点，检查子节点
+    recursivelyTraversePassiveMountEffects(child);
+    // !2. 如果有passive effects，执行~
+    commitPassiveEffects(finishedWork);
+    child = child.sibling;
+  }
+}
+
+// 执行 useEffect
+function commitPassiveEffects(finishedWork: Fiber) {
+  switch (finishedWork.tag) {
+    case FunctionComponent: {
+      if (finishedWork.flags & Passive) {
+        commitHookEffectListMount(HookPassive, finishedWork);
+        finishedWork.flags &= ~Passive;
+      }
+      break;
+    }
+  }
 }
