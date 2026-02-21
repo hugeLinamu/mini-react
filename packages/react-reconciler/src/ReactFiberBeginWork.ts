@@ -9,6 +9,7 @@ import { renderWithHooks } from "./ReactFiberHooks";
 import type { Fiber } from "./ReactInternalTypes";
 import {
   ClassComponent,
+  ContextProvider,
   Fragment,
   FunctionComponent,
   HostComponent,
@@ -18,6 +19,7 @@ import {
   SimpleMemoComponent,
 } from "./ReactWorkTags";
 import { isNum, isStr } from "shared/utils";
+import { pushProvider, readContext } from "./ReactFiberNewContext";
 
 /**
  * beginWork 的核心职责是：根据新的 props / state，对当前 Fiber 进行 diff，创建或复用子 Fiber，并决定接下来要处理哪一个子节点
@@ -47,6 +49,8 @@ export function beginWork(
       return updateClassComponent(current, workInProgress);
     case FunctionComponent:
       return updateFunctionComponent(current, workInProgress);
+    case ContextProvider:
+      return updateContextProvider(current, workInProgress);
     case MemoComponent:
       return updateMemoComponent(current, workInProgress);
     case SimpleMemoComponent:
@@ -222,4 +226,21 @@ function shouldSetTextContent(type: string, props: any): boolean {
       props.dangerouslySetInnerHTML !== null &&
       props.dangerouslySetInnerHTML.__html != null)
   );
+}
+
+function updateContextProvider(current: Fiber | null, workInProgress: Fiber) {
+  // 获取 Provider 组件 对应的 _context
+  const context = workInProgress.type._context;
+  // 传给  Provider 组件 的 value
+  const value = workInProgress.pendingProps.value;
+  // stack 受限的数据结构，只能在栈顶操作 [0]
+  // ! 1. 记录下context、value到stack(push)，2. 后代组件消费 3. 消费完后出栈(pop)
+  // 数据结构存储：stack: 先进后出
+  pushProvider(context, value);
+  reconcileChildren(
+    current,
+    workInProgress,
+    workInProgress.pendingProps.children,
+  );
+  return workInProgress.child;
 }

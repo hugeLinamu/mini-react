@@ -8,5 +8,7 @@ export {
   useRef,
   useEffect,
   useLayoutEffect,
+  useContext,
 } from "react-reconciler/src/ReactFiberHooks";
 export { memo } from "./src/ReactMemo";
+export { createContext } from "./src/ReactContext";

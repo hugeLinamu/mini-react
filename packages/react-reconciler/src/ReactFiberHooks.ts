@@ -5,6 +5,8 @@ import type { Fiber, FiberRoot } from "./ReactInternalTypes";
 import { HostRoot } from "./ReactWorkTags";
 import { HookFlags, HookLayout, HookPassive } from "./ReactHookEffectTags";
 import { Flags, Passive, Update } from "./ReactFiberFlags";
+import { ReactContext } from "shared/ReactTypes";
+import { readContext } from "./ReactFiberNewContext";
 
 // Hook 链表
 type Hook = {
@@ -317,4 +319,8 @@ function pushEffect(
   }
 
   return effect;
+}
+
+export function useContext<T>(context: ReactContext<T>): T {
+  return readContext(context);
 }

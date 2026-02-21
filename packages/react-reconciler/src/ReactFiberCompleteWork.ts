@@ -2,6 +2,7 @@ import { isNum, isStr } from "shared/utils";
 import type { Fiber } from "./ReactInternalTypes";
 import {
   ClassComponent,
+  ContextProvider,
   Fragment,
   FunctionComponent,
   HostComponent,
@@ -15,6 +16,7 @@ import {
   updateFiberProps,
 } from "react-dom-bindings/src/client/ReactDOMComponentTree";
 import { registrationNameDependencies } from "react-dom-bindings/src/events/EventRegistry";
+import { popProvider } from "./ReactFiberNewContext";
 
 export function completeWork(
   current: Fiber | null,
@@ -28,6 +30,10 @@ export function completeWork(
     case MemoComponent:
     case SimpleMemoComponent:
     case HostRoot: {
+      return null;
+    }
+    case ContextProvider: {
+      popProvider(workInProgress.type._context);
       return null;
     }
     case HostComponent: {
