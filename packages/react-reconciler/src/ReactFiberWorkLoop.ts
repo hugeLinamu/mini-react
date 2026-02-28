@@ -57,7 +57,7 @@ function renderRootSync(root: FiberRoot) {
   const prevExecutionContext = executionContext;
   executionContext |= RenderContext;
 
-  // !2. 初始化
+  // !2. 初始化，构建WorkInProgress树
   prepareFreshStack(root);
 
   // !3. 遍历构建fiber树
@@ -149,3 +149,58 @@ function completeUnitOfWork(unitOfWork: Fiber) {
     workInProgress = completedWork;
   } while (completedWork !== null);
 }
+
+/**
+ * <div className="border border1">          A - 根 
+    <div>                                    B
+      <div>                                  C
+        <div>1-1-1</div>                     D
+        <div>1-1-2</div>                     E
+        <div>1-1-3</div>                     F
+      </div>
+      <div>1-2</div>                         G
+      <div>                                  H
+        <div>1-3-1</div>                     I
+        <div>1-3-2</div>                     J
+        <div>1-3-3</div>                     K
+      </div>
+    </div>
+    <div>2-1</div>                           L
+    <div>2-2</div>                           M
+    <div>2-3</div>                           N
+  </div>
+
+执行流程 
+
+
+步骤  当前处理的 Fiber       执行什么                接下来返回/去向                    说明
+1     A                   beginWork(A)           返回 B（第一个 child）           向下
+2     B                   beginWork(B)           返回 C（第一个 child）           向下
+3     C                   beginWork(C)           返回 D（第一个 child）           向下
+4     D                   beginWork(D)           返回 null（叶子）                叶子节点
+5     D                   completeWork(D)        返回 E（D 的 sibling）           D 完成 → 兄弟
+6     E                   beginWork(E)           返回 null                       叶子节点
+7     E                   completeWork(E)        返回 F（E 的 sibling）           E 完成 → 兄弟
+8     F                   beginWork(F)           返回 null                       叶子节点
+9     F                   completeWork(F)        返回 null（F 无 sibling）        F 完成 → 向上（回到 C）
+10    C                   completeWork(C)        返回 G（C 的 sibling）           C 子树结束 → 兄弟
+11    G                   beginWork(G)           返回 null                       叶子节点
+12    G                   completeWork(G)        返回 H（G 的 sibling）           G 完成 → 兄弟
+13    H                   beginWork(H)           返回 I（第一个 child）            向下
+14    I                   beginWork(I)           返回 null                       叶子节点
+15    I                   completeWork(I)        返回 J（I 的 sibling）           I 完成 → 兄弟
+16    J                   beginWork(J)           返回 null                       叶子节点
+17    J                   completeWork(J)        返回 K（J 的 sibling）           J 完成 → 兄弟
+18    K                   beginWork(K)           返回 null                       叶子节点
+19    K                   completeWork(K)        返回 null（K 无 sibling）        K 完成 → 向上（回到 H）
+20    H                   completeWork(H)        返回 null                       H 子树结束 → 向上（回到 B）
+21    B                   completeWork(B)        返回 L（B 的 sibling）           B 子树全部完成 → A 的下一个孩子
+22    L                   beginWork(L)           返回 null                       叶子节点
+23    L                   completeWork(L)        返回 M（L 的 sibling）           L 完成 → 兄弟
+24    M                   beginWork(M)           返回 null                       叶子节点
+25    M                   completeWork(M)        返回 N（M 的 sibling）           M 完成 → 兄弟
+26    N                   beginWork(N)           返回 null                       叶子节点
+27    N                   completeWork(N)        返回 null                       N 完成 → 向上（回到 A）
+28    A                   completeWork(A)        返回 null                       根完成，整个 render 阶段结束
+
+*/

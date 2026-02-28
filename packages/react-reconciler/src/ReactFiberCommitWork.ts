@@ -1,6 +1,6 @@
 import { isHost } from "./ReactFiberCompleteWork";
 import { ChildDeletion, Passive, Placement, Update } from "./ReactFiberFlags";
-import { HookFlags, HookLayout, HookPassive } from "./ReactHookEffectTags";
+import { type HookFlags, HookLayout, HookPassive } from "./ReactHookEffectTags";
 import type { FiberRoot, Fiber } from "./ReactInternalTypes";
 import {
   FunctionComponent,
@@ -33,7 +33,7 @@ function commitReconciliationEffects(finishedWork: Fiber) {
   const flags = finishedWork.flags;
   if (flags & Placement) {
     // 页面初次渲染：为 新增插入 appendChild
-    // todo 页面更新，修改位置 appendChild || insertBefore
+    // 页面更新，修改位置 appendChild || insertBefore
     commitPlacement(finishedWork);
     // 清除flags，做非的与运算
     finishedWork.flags &= ~Placement;

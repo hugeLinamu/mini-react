@@ -87,7 +87,7 @@ function createChildReconciler(shouldTrackSideEffects: boolean) {
    *    a. 如果 key 相同
    *       a1. 类型 相同，则直接复用之前的fiber
    *       a2. 类型 不同，则标记后面所有的子节点都需要删除，并根据元素类型创建新的 Fiber
-   *    b. 如果 key 不相同， 直接标记这个节点为需要删除，并根据元素类型创建新的 Fiber
+   *    b. 如果 key 不相同， 直接标记这个节点为需要删除，并继续向后查找，如果最后找不到，则根据元素类型创建新的 Fiber
    */
   function reconcileSingleElement(
     returnFiber: Fiber,
